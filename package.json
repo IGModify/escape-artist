@@ -1,6 +1,6 @@
 {
   "name": "escape-artist",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Escape from Tarkov companion: active quests per map, objective markers, loadout checklist and an optimal route from your spawn. Runs as a transparent overlay or a normal window.",
   "scripts": {
