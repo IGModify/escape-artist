@@ -28,7 +28,9 @@ jobs:
         with:
           workspaces: src-tauri
 
-      - run: npm ci
+      # npm install (not npm ci): the build machine resolves a couple of optional WebAssembly
+      # helper packages that the lock file made on a dev PC doesn't list; ci would refuse.
+      - run: npm install --no-audit --no-fund
 
       - name: Tests
         run: npm test
