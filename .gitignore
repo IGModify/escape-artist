@@ -1,0 +1,17 @@
+node_modules/
+out/
+dist/
+*.log
+build/snapshot/
+build/snapshot.tmp/
+src-tauri/target/
+src-tauri/gen/
+out/
+
+# Local-only: editor/agent settings and signing keys never go public.
+.claude/
+*.key
+*.key.password
+.env
+.env.*
+tmp/

@@ -1,0 +1,53 @@
+# Builds Escape Artist on GitHub's servers and publishes a release when a version tag is pushed
+# (e.g. v0.3.0). The release has the installer plus latest.json, which installed apps read to find
+# and verify updates. Built here, not on a personal PC, so no local paths end up in the program.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      # Quest data + map images + story chapters bundled for offline first runs.
+      - name: Data snapshot
+        run: npm run snapshot
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Escape Artist ${{ github.ref_name }}
+          releaseBody: |
+            **Download:** `Escape Artist_*_x64-setup.exe` below, then run it.
+            Already installed? The app updates itself: it offers this version the next time it starts.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true

@@ -1,0 +1,343 @@
+:root {
+  --bg: #121417;
+  --panel: rgba(18, 20, 23, 0.94);
+  --line: #2a2f36;
+  --text: #e6e2d6;
+  --muted: #8b8f96;
+  --accent: #c8a45a;
+  --ok: #6fcf97;
+  --bad: #eb5757;
+  color-scheme: dark;
+  font: 13px/1.4 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; background: transparent; }
+button, select, input { font: inherit; color: inherit; }
+button {
+  background: #20242a; border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.on { background: var(--accent); color: #111; border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+select, input:not([type]) , input[type='text'] {
+  background: #1a1d21; border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px;
+}
+
+.shell { height: 100%; display: flex; flex-direction: column; position: relative; }
+.shell.overlay { background: var(--panel); border: 1px solid #3a3f46; border-radius: 10px; overflow: hidden; }
+.shell.windowed { background: var(--bg); }
+.shell.loading { align-items: center; justify-content: center; }
+.shell.ghost { border-color: transparent; }
+
+.bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.overlay .bar { cursor: move; }
+.bar select, .bar button { cursor: default; }
+.brand { font-weight: 800; letter-spacing: 1px; color: var(--accent); }
+.bar select { max-width: 170px; }
+.icon { padding: 2px 7px; min-width: 26px; }
+.grow { flex: 1; }
+.pill { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+.pill.live { background: var(--bad); color: #fff; }
+.pill.mode { background: #262a30; color: var(--accent); border: 1px solid var(--line); white-space: nowrap; }
+
+.banner { padding: 6px 10px; background: #3a2e14; color: #f6deb0; font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.tabs { display: flex; gap: 2px; padding: 4px 6px 0; border-bottom: 1px solid var(--line); }
+.tabs button { border: none; border-radius: 4px 4px 0 0; background: transparent; color: var(--muted); }
+.tabs button.on { background: #262a30; color: var(--text); }
+
+.body { flex: 1; min-height: 0; display: flex; }
+.windowed .body .map-panel { flex: 1 1 62%; border-right: 1px solid var(--line); }
+.windowed .body .side { flex: 1 1 38%; max-width: 480px; }
+.overlay .body > * { flex: 1; }
+.side { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.map-panel { position: relative; min-height: 0; display: flex; }
+.map { flex: 1; background: #0d0f11; }
+.map.picking { cursor: crosshair; }
+.map .leaflet-container, .leaflet-container { background: #0d0f11; }
+.map-hud {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 500; display: flex; gap: 8px; align-items: flex-end;
+  pointer-events: none;
+}
+.hud-text { flex: 1; background: rgba(10, 12, 14, 0.85); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-size: 12px; }
+.hud-buttons { display: flex; gap: 4px; pointer-events: auto; }
+.map-msg { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 500; background: #3a1414; padding: 4px 8px; border-radius: 4px; }
+
+.mk-wrap { background: none; border: none; }
+
+/* Multi-level maps: objectives on another floor are lighter and say which way (▲ up / ▼ down). */
+.mk-wrap.off-floor { opacity: 0.45; }
+.mk-wrap.off-floor:hover { opacity: 1; }
+.mk-f {
+  position: absolute; bottom: -7px; right: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: #f8fafc; color: #0b0d10; font: 700 8px/14px 'Segoe UI', sans-serif; text-align: center;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
+}
+.exfil { position: relative; }
+
+/* Floor switcher: elevator-style buttons, top floor at the top. */
+.floors {
+  position: absolute; top: 8px; right: 8px; z-index: 600; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+  pointer-events: none;
+}
+.floors-now {
+  background: rgba(10, 12, 14, 0.88); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px;
+  font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap;
+}
+.floors-stack {
+  display: flex; flex-direction: column; background: rgba(10, 12, 14, 0.88); border: 1px solid var(--line);
+  border-radius: 8px; padding: 3px; gap: 2px; pointer-events: auto;
+}
+.floor-btn {
+  position: relative; min-width: 34px; height: 28px; padding: 0 6px; border: 1px solid transparent; border-radius: 5px;
+  background: transparent; color: var(--muted); font-weight: 700; font-size: 12px;
+}
+.floor-btn:hover { background: #1f242a; color: var(--text); }
+.floor-btn.on { background: var(--accent); color: #111; }
+.floor-n {
+  position: absolute; top: -4px; left: -6px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px;
+  background: #f8fafc; color: #111; font: 700 9px/14px 'Segoe UI', sans-serif;
+}
+.floor-you {
+  position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 1.5px #000;
+}
+.obj-floor { color: #c4b5fd; }
+.mk {
+  position: relative; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(12, 14, 16, 0.9); border: 2px solid var(--c); color: var(--c); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+}
+/* Extracts: solid rounded squares with a dark glyph, so they never read as a (round, outlined) quest marker. */
+.exfil {
+  width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center;
+  background: var(--c); color: #0b0d10; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+}
+.mk-done { opacity: 0.35; filter: grayscale(1); }
+.mk-alt { opacity: 0.5; border-style: dashed; }
+.mk-n {
+  position: absolute; top: -8px; left: -8px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--route, #fbbf24);
+  color: #111; font: 700 10px/16px 'Segoe UI', sans-serif; text-align: center; padding: 0 3px; z-index: 2;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Marker corners: route stop top-left, stack count top-right, Kappa bottom-left, floor ▲/▼ bottom-right,
+   and the needed item in a chip beside the marker. */
+/* Needed items: a row of chips beside the marker (several when a quest stashes several items here). */
+.mk-items { position: absolute; left: 29px; top: 3px; display: flex; gap: 2px; }
+.mk-item {
+  position: relative; flex: none; width: 20px; height: 20px; border-radius: 4px; display: grid; place-items: center;
+  background: #15181c; border: 1.5px solid var(--c); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); overflow: hidden;
+}
+.mk-item img { width: 18px; height: 18px; object-fit: contain; }
+.mk-f { z-index: 2; }
+
+/* Stacks: several objectives in one spot. Offset rings behind suggest a pile; the count is top-right. */
+.mk-stack { box-shadow: 3px -3px 0 -1px rgba(12, 14, 16, 0.95), 3px -3px 0 1px var(--c), 6px -6px 0 -1px rgba(12, 14, 16, 0.95), 6px -6px 0 1px var(--c); }
+.mk-count {
+  position: absolute; top: -10px; right: -12px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px; z-index: 3;
+  background: #f8fafc; color: #0b0d10; font: 800 11px/18px 'Segoe UI', sans-serif; text-align: center;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+}
+.stack-tip { max-width: min(340px, 85vw) !important; }
+.st-head { font-weight: 700; margin-bottom: 4px; }
+.st-row {
+  display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; width: 100%; text-align: left;
+  background: none; border: none; color: inherit; font: inherit;
+}
+.st-ic { flex: none; margin-top: 1px; display: inline-flex; }
+.st-txt { flex: 1; }
+.st-n {
+  flex: none; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 3px; background: var(--route, #e2e8f0); color: #111;
+  font: 700 10px/16px 'Segoe UI', sans-serif; text-align: center;
+}
+.st-done .st-txt { text-decoration: line-through; opacity: 0.55; }
+.st-off { opacity: 0.7; }
+.st-foot { margin-top: 4px; color: var(--muted); font-style: italic; }
+/* The pick list popup (stacks that can't be split by zooming). */
+.stack-pop .leaflet-popup-content-wrapper, .stack-pop .leaflet-popup-tip { background: #1a1d21; color: var(--text); border: 1px solid var(--line); }
+.stack-pop .leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.35; }
+.stack-pop .st-row { cursor: pointer; border-radius: 4px; padding: 4px; }
+.stack-pop .st-row:hover { background: #262b31; }
+.stack-pop a.leaflet-popup-close-button { color: var(--muted); }
+.player { width: 22px; height: 22px; transform-origin: 50% 50%; filter: drop-shadow(0 0 3px #000); }
+/* Size to the text instead of squeezing beside the marker; wrap only past 280px (or 80% of a narrow window). */
+.leaflet-tooltip {
+  background: #1a1d21; color: var(--text); border: 1px solid var(--line);
+  width: max-content; max-width: min(280px, 80vw); white-space: normal; line-height: 1.35; padding: 6px 8px;
+}
+.leaflet-tooltip-top:before { border-top-color: #1a1d21; }
+
+.list { overflow: auto; padding: 8px 10px; flex: 1; }
+.list section { margin-bottom: 14px; }
+.list h3 { margin: 0 0 4px; font-size: 13px; }
+.list h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); }
+.list small { font-weight: 400; }
+.quest { border-left: 2px solid var(--line); padding-left: 8px; }
+.obj { display: flex; gap: 6px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
+.obj input { margin-top: 3px; }
+.obj.done > span:last-child { text-decoration: line-through; opacity: 0.55; }
+.obj-ic { display: inline-flex; margin-top: 2px; }
+.muted { color: var(--muted); }
+em { color: var(--muted); }
+.bring { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+.bring img { width: 36px; height: 36px; object-fit: contain; background: #1a1d21; border-radius: 4px; }
+.row { display: flex; gap: 8px; align-items: center; padding: 3px 0; }
+.row.task { border-bottom: 1px solid #1d2126; }
+.path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+.empty { padding: 20px; color: var(--muted); text-align: center; margin: auto; }
+
+.status { padding: 4px 10px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+.ghost-hint {
+  position: absolute; top: 40px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.7);
+  padding: 2px 8px; border-radius: 4px; font-size: 11px; pointer-events: none;
+}
+
+/* Hiding quests */
+.quest-head { display: flex; align-items: center; gap: 6px; }
+.hide-btn { padding: 2px 5px; color: var(--muted); opacity: 0.6; }
+.quest:hover .hide-btn, .hide-btn:focus { opacity: 1; }
+.hide-btn:hover { color: var(--text); }
+.track-btn { padding: 2px 5px; color: var(--muted); }
+.track-btn.on { background: transparent; color: var(--ok); border-color: var(--line); }
+.hidden-quests { border-top: 1px solid var(--line); padding-top: 8px; }
+.hidden-quests h4 { color: var(--muted); }
+
+/* Kappa-required quests */
+.kappa {
+  display: inline-block; min-width: 15px; padding: 0 3px; border-radius: 3px; background: #7c3aed; color: #fff;
+  font: 700 10px/15px 'Segoe UI', sans-serif; text-align: center; vertical-align: 1px;
+}
+.mk-k {
+  position: absolute; bottom: -6px; left: -6px; width: 14px; height: 14px; border-radius: 3px; background: #7c3aed;
+  color: #fff; font: 700 9px/14px 'Segoe UI', sans-serif; text-align: center; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+/* Transit quests: their own block under the regular quests */
+.transit-quests { border-top: 1px solid var(--line); padding-top: 8px; margin-bottom: 14px; }
+.transit-quests > h4 { color: #c4b5fd; }
+.transit-quests h4 button { text-transform: none; letter-spacing: 0; font-size: 11px; }
+.transit-quests .quest { margin-bottom: 10px; }
+
+/* Settings → Map colors */
+.color-group { margin-bottom: 6px; }
+.color-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin: 6px 0 2px; }
+.color-row input[type='color'] { width: 28px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
+.color-row .pv { width: 20px; height: 20px; flex: none; }
+.color-row .mk.pv { border-width: 1.5px; box-shadow: none; }
+.pv-dot { width: 9px; height: 9px; margin: 0 5px; border-radius: 50%; border: 1px solid #000; flex: none; }
+.pv-line { width: 20px; height: 0; border-top: 3px dashed; flex: none; }
+
+/* Main story checklist */
+.story { border-top: 1px solid var(--line); padding-top: 8px; }
+.story-chapter { margin-bottom: 8px; }
+.story-name { font-weight: 600; color: #e9d5ff; margin: 4px 0 2px; }
+.story-details { margin: 4px 0; }
+.story-details summary { cursor: pointer; padding: 3px 0; }
+.story-branch { margin: 8px 0 2px; font-size: 12px; font-style: italic; color: var(--accent); }
+.credit { font-size: 11px; }
+
+/* Route direction arrows, one per leg. */
+.route-arrow { width: 18px; height: 18px; transform-origin: 50% 50%; filter: drop-shadow(0 0 1px #000); }
+
+/* Location photos in marker tooltips (wiki guide). Fixed sizes so the tooltip doesn't jump. */
+.leaflet-tooltip.photo-tip { max-width: min(332px, 90vw); opacity: 1 !important; }
+.ph { margin-top: 6px; width: 310px; max-width: 100%; }
+.ph-main { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #0b0d10; border-radius: 4px; }
+.ph-cap { margin-top: 3px; color: var(--text); }
+.ph-more { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px; }
+.ph-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0b0d10; border-radius: 3px; }
+.ph-credit { margin-top: 3px; font-size: 10px; color: var(--muted); }
+/* When a photo tooltip doesn't fit anywhere on the map: smaller photo, no thumbnails. */
+.ph-compact .ph { width: 210px; }
+.ph-compact .ph-more { display: none; }
+.spots-n { color: var(--accent); }
+
+/* Spawn rings: every possible spot of a quest item with several spawns (hover or click its marker). */
+.spawn-ring { position: relative; width: 22px; height: 22px; }
+.spawn-ring::before, .spawn-ring span {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%; border: 2.5px solid var(--c);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+.spawn-ring span { inset: 0; border-width: 2px; opacity: 0; animation: spawn-pulse 1.4s ease-out 3; }
+@keyframes spawn-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .spawn-ring span { animation: none; } }
+
+/* Quest list: show a kill zone / every spawn point on the map. */
+.obj-pin {
+  margin-left: 6px; padding: 0 6px; height: 18px; font-size: 11px; line-height: 16px; border-radius: 9px;
+  color: var(--muted); background: transparent; border: 1px solid var(--line); vertical-align: 1px;
+}
+.obj-pin:hover { color: var(--text); }
+.obj-pin.on { color: #111; background: var(--accent); border-color: var(--accent); }
+
+/* Story chapter states and "how to start" guides. */
+.story-state { display: inline-block; padding: 0 6px; border-radius: 8px; font-size: 10px; font-weight: 700; line-height: 16px; vertical-align: 1px; }
+.story-state.ns { background: #3a2d14; color: #fbbf24; }
+.story-state.ip { background: #1b2a3a; color: #7dd3fc; }
+.story-state.dn { background: #163222; color: #4ade80; }
+.story-start { margin: 4px 0 8px; padding: 6px 8px; border-left: 2px solid #fbbf24; background: rgba(251, 191, 36, 0.06); border-radius: 0 4px 4px 0; }
+.story-start ul { margin: 4px 0; padding-left: 18px; }
+.story-start li { margin: 2px 0; }
+.story-start button { margin-top: 4px; }
+.story-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 6px; }
+.story-photos figure { margin: 0; }
+.story-photos img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0b0d10; border-radius: 4px; display: block; }
+.story-photos figcaption { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Settings opens from the cogwheel in the top bar; while open, the tab row says so. */
+.icon.gear { display: inline-flex; align-items: center; justify-content: center; }
+.tab-settings { margin-left: auto; padding: 0 10px; align-self: center; font-size: 12px; font-weight: 600; color: var(--accent); }
+
+
+/* Top bar fits the narrow overlay: the map picker gives way, pills never wrap, buttons stay whole. */
+.bar select { flex: 0 1 170px; min-width: 70px; }
+.bar .pill { white-space: nowrap; flex: none; }
+.bar .icon { flex: none; }
+.bar .grow { min-width: 4px; }
+.overlay .bar { gap: 4px; padding: 6px; }
+.overlay .icon { padding: 2px 5px; min-width: 24px; }
+
+/* You: a soft ring around the arrow, and a short pulse when a screenshot places you. */
+.you { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
+.you::before {
+  content: ''; position: absolute; inset: 2px; border-radius: 50%;
+  background: color-mix(in srgb, var(--c) 18%, transparent); border: 2px solid color-mix(in srgb, var(--c) 70%, transparent);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+.you .player { position: relative; }
+.you-pulse { position: relative; width: 120px; height: 120px; pointer-events: none; }
+.you-pulse i {
+  position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
+  border: 3px solid var(--c); box-shadow: 0 0 8px var(--c); opacity: 0; transform: scale(0.15);
+  animation: you-pulse 0.85s ease-out forwards;
+}
+.you-pulse i:nth-child(2) { animation-delay: 0.6s; }
+.you-pulse i:nth-child(3) { animation-delay: 1.2s; }
+@keyframes you-pulse { 0% { transform: scale(0.15); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .you-pulse i { animation-duration: 0.01s; } }
+
+/* Story tab: the step(s) you're on in each chapter. */
+.story-current { background: rgba(251, 191, 36, 0.08); border-left: 2px solid #fbbf24; margin-left: -4px; padding-left: 2px; border-radius: 0 3px 3px 0; }
+.mk-more { color: var(--text); font: 700 9px/1 'Segoe UI', sans-serif; }
+/* Tooltip of a marker standing for several objectives: one line each. */
+.grp-row { margin-top: 3px; padding-left: 8px; border-left: 2px solid var(--line); }
+
+.grp-row.st-done { text-decoration: line-through; opacity: 0.55; }
+
+/* Kills needed for a kill objective: in the quest list, and top-left on kill-zone markers. */
+.obj-kills {
+  display: inline-block; margin-right: 5px; padding: 0 5px; border-radius: 8px; vertical-align: 1px;
+  background: rgba(239, 68, 68, 0.18); color: #fca5a5; font: 700 11px/16px 'Segoe UI', sans-serif;
+}
+.mk-kills {
+  position: absolute; top: -9px; left: -10px; min-width: 18px; height: 16px; padding: 0 3px; border-radius: 8px; z-index: 2;
+  background: var(--c); color: #111; font: 800 10px/16px 'Segoe UI', sans-serif; text-align: center;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+}
+
+/* App update bar. */
+.update-banner { background: #14304a; }
+

@@ -1,0 +1,41 @@
+[package]
+name = "escape-artist"
+version = "0.2.0"
+description = "Escape from Tarkov quest overlay: quests per map, objective markers, loadout list and route from your spawn"
+edition = "2021"
+
+[lib]
+name = "escape_artist_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-http = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+notify = "8"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+# Same versions Tauri already uses (no extra copies): for WebView2's memory target.
+webview2-com = "0.39"
+windows = "0.62"
+
+[dev-dependencies]
+tempfile = "3"
+
+# Small, fast release binary.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

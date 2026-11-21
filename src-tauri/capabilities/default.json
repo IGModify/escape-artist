@@ -1,0 +1,35 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the UI may do: its own window, a folder picker, HTTP to tarkov.dev and the wiki, and installing app updates.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "dialog:allow-open",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://json.tarkov.dev/*"
+        },
+        {
+          "url": "https://api.tarkov.dev/*"
+        },
+        {
+          "url": "https://assets.tarkov.dev/*"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/the-hideout/*"
+        },
+        {
+          "url": "https://escapefromtarkov.fandom.com/api.php*"
+        }
+      ]
+    },
+    "updater:default",
+    "process:allow-restart"
+  ]
+}
