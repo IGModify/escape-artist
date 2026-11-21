@@ -32,12 +32,13 @@ jobs:
       # helper packages that the lock file made on a dev PC doesn't list; ci would refuse.
       - run: npm install --no-audit --no-fund
 
-      - name: Tests
-        run: npm test
-
-      # Quest data + map images + story chapters bundled for offline first runs.
+      # Quest data + map images + story chapters bundled for offline first runs
+      # (some tests check real data against it, so it comes first).
       - name: Data snapshot
         run: npm run snapshot
+
+      - name: Tests
+        run: npm test
 
       - uses: tauri-apps/tauri-action@v0
         env:
