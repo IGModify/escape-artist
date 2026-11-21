@@ -197,7 +197,8 @@ em { color: var(--muted); }
 
 /* Hiding quests */
 .quest-head { display: flex; align-items: center; gap: 6px; }
-.hide-btn { padding: 2px 5px; color: var(--muted); opacity: 0.6; }
+/* Rarely used: no box, faint until you hover the quest. */
+.hide-btn { padding: 2px 5px; color: var(--muted); opacity: 0.35; background: transparent; border-color: transparent; }
 .quest:hover .hide-btn, .hide-btn:focus { opacity: 1; }
 .hide-btn:hover { color: var(--text); }
 .track-btn { padding: 2px 5px; color: var(--muted); }
@@ -340,4 +341,13 @@ em { color: var(--muted); }
 
 /* App update bar. */
 .update-banner { background: #14304a; }
+
+/* Story tab: the step you're on, under the chapter name. */
+.story-next { display: block; margin: 2px 0 0 14px; font-size: 12px; color: var(--text); opacity: 0.85; }
+/* Settings → Map colors collapsed to one line. */
+.colors-details > summary { cursor: pointer; list-style: none; }
+.colors-details > summary::-webkit-details-marker { display: none; }
+.colors-h { display: inline; }
+.colors-details > summary::before { content: '▸ '; color: var(--muted); }
+.colors-details[open] > summary::before { content: '▾ '; }
 

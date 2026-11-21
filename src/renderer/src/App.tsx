@@ -624,7 +624,7 @@ function QuestPanel(p: {
       {items.map((o) => (
         <label key={o.objective.id} className={`obj${p.done.has(o.objective.id) ? ' done' : ''}`}>
           <input type="checkbox" checked={p.done.has(o.objective.id)} onChange={() => p.onToggle(o.objective.id)} />
-          <span className="obj-ic" style={{ color: p.colors[o.kind] }} dangerouslySetInnerHTML={{ __html: glyph(o.kind, 14) }} />
+          <span className="obj-ic" title={MARKER_LABEL[o.kind]} style={{ color: p.colors[o.kind] }} dangerouslySetInnerHTML={{ __html: glyph(o.kind, 14) }} />
           <span>
             {killCount(o.objective) !== null && (
               <span className="obj-kills" title={`${killCount(o.objective)} kills needed`}>
@@ -647,7 +647,6 @@ function QuestPanel(p: {
                 {o.areas.length > 0 ? 'Zone' : `Spawns (${o.spots.flat().length})`}
               </button>
             )}
-            <span className="muted"> · {MARKER_LABEL[o.kind]}</span>
           </span>
         </label>
       ))}
@@ -978,11 +977,15 @@ function MarkerColors(p: { colors: Record<string, string>; set: (s: Partial<Sett
   const changed = Object.keys(local).length > 0;
   return (
     <section>
-      <h4 className="quest-head">
-        <span className="grow">Map colors</span>
+      <details className="colors-details">
+        <summary>
+          <h4 className="colors-h">Map colors</h4>
+          <span className="muted"> {changed ? `${Object.keys(local).length} changed` : 'default colors'} · click to change</span>
+        </summary>
+      <div className="row">
+        <span className="muted grow">Quest objectives are round, extracts are solid squares, spawns are small dots.</span>
         {changed && <button onClick={() => save({})}>Reset all</button>}
-      </h4>
-      <p className="muted">Quest objectives are round, extracts are solid squares, spawns are small dots.</p>
+      </div>
       {COLOR_GROUPS.map((g) => (
         <div key={g.title} className="color-group">
           <div className="muted color-title">{g.title}</div>
@@ -1008,6 +1011,7 @@ function MarkerColors(p: { colors: Record<string, string>; set: (s: Partial<Sett
           ))}
         </div>
       ))}
+      </details>
     </section>
   );
 }
@@ -1025,6 +1029,9 @@ function ColorPreview({ k, c }: { k: ColorKey; c: string }) {
   if (k === 'exfil') return <span className="exfil pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: exfilGlyph(11) }} />;
   return <span className="mk pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: glyph(k, 12) }} />;
 }
+
+/** Story tab order: what you're doing, then what you can start, then what's finished. */
+const STATE_ORDER: Record<ChapterState, number> = { 'in-progress': 0, 'not-started': 1, done: 2 };
 
 const STATE_LABEL: Record<ChapterState, string> = { 'not-started': 'Not started', 'in-progress': 'In progress', done: 'Done' };
 
@@ -1093,13 +1100,17 @@ function StoryPanel(p: {
         {settings.showStory && p.storyError && !p.story && <div className="bad">{p.storyError}</div>}
         {settings.showStory && !p.story && !p.storyError && <div className="muted">Loading story chapters…</div>}
         {settings.showStory &&
-          p.story?.chapters.map((c) => {
+          [...(p.story?.chapters ?? [])]
+            .sort((a, b) => STATE_ORDER[chapterState(a, p.storyDone, p.storyStarted)] - STATE_ORDER[chapterState(b, p.storyDone, p.storyStarted)])
+            .map((c) => {
             const ids = c.steps.map((s) => s.id);
             const doneCount = ids.filter((id) => p.storyDone.has(id)).length;
             const st = chapterState(c, p.storyDone, p.storyStarted);
             // Where you are in the chapter: highlighted in the list.
             const current = new Set(st === 'in-progress' ? activeSteps(c, p.storyDone).map((x) => x.id) : []);
             const markedOnly = st === 'in-progress' && p.storyStarted.has(c.name) && doneCount === 0;
+            // The step you're on, shown without opening the chapter.
+            const nextStep = st === 'in-progress' ? (activeSteps(c, p.storyDone).find((x) => !x.optional) ?? null) : null;
             return (
               <details key={c.name} className="story-details">
                 <summary>
@@ -1107,6 +1118,12 @@ function StoryPanel(p: {
                   <span className={doneCount === ids.length ? 'ok' : 'muted'}>
                     {doneCount}/{ids.length}
                   </span>
+                  {nextStep && (
+                    <span className="story-next">
+                      Next: {nextStep.text}
+                      {nextStep.maps.length > 0 && <span className="muted"> · {nextStep.maps.map(mapLabel).join(', ')}</span>}
+                    </span>
+                  )}
                 </summary>
                 {st === 'not-started' && c.start && (
                   <div className="story-start">
