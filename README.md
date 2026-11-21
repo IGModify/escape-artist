@@ -49,7 +49,11 @@ Nothing here reads game memory or injects into the game. It only reads log files
 
 ## Install
 
-Run `src-tauri\target\release\bundle\nsis\Escape Artist_<version>_x64-setup.exe` (about 3 MB). It installs for the current user (no admin needed) and adds **Escape Artist** to the Desktop and the Start menu. Running a newer setup file updates in place. To uninstall, use Windows Settings → Apps.
+**[Download the latest version](https://github.com/IGModify/escape-artist/releases/latest)**: get `Escape Artist_<version>_x64-setup.exe` (about 3 MB) and run it. It installs for the current user (no admin needed) and adds **Escape Artist** to the Desktop and the Start menu. To uninstall, use Windows Settings → Apps.
+
+The installer isn't signed with a paid Windows certificate yet, so the first time Windows may say "Windows protected your PC": click **More info → Run anyway**.
+
+**Updates are automatic:** a few seconds after it starts, the app checks GitHub for a newer release and offers **Update now** (download, install, restart; settings and progress are kept). Settings → App has a **Check for app updates** button. Updates are signed, and the app only installs ones signed with this project's key.
 
 It needs Microsoft's WebView2, which ships with Windows 10 and 11. If it's missing, the installer downloads it.
 
@@ -74,5 +78,13 @@ npm test                         # TypeScript tests (vitest) + Rust tests (cargo
 npm run dist                     # refresh the bundled data snapshot, then build the installer
 node scripts/demo.mjs windowed   # built app + fake EFT install with real Customs quests
 ```
+
+### Publishing a new version
+
+```powershell
+node scripts/release.mjs 0.4.0   # sets the version everywhere, commits, tags and pushes
+```
+
+GitHub then builds, signs and publishes the release (`.github/workflows/release.yml`), and installed copies offer the update the next time they start. Releases are built on GitHub, not on a personal PC, so no local paths end up in the program. The signing key lives outside the project (`%USERPROFILE%\.tauri\escape-artist.key` and `.password`) and in the repository's secrets; keep a backup, because without it installed copies can't receive updates.
 
 If the EFT logs folder isn't found automatically (registry, Steam libraries, `C:\Battlestate Games\…`), set it under Settings.
