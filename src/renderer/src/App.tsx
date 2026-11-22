@@ -92,7 +92,8 @@ export function App() {
   const [showSpawns, setShowSpawns] = useState<boolean>(() => load('showSpawns', true));
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
   const [showBd, setShowBd] = useState<boolean>(() => load('showBd', true));
-  const [showPois, setShowPois] = useState<boolean>(() => load('showPois', true));
+  const [showFix, setShowFix] = useState<boolean>(() => load('showFix', true));
+  const [showKeys, setShowKeys] = useState<boolean>(() => load('showKeys', true));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
@@ -145,7 +146,8 @@ export function App() {
   useEffect(() => save('mapId', mapId), [mapId]);
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
   useEffect(() => save('showBd', showBd), [showBd]);
-  useEffect(() => save('showPois', showPois), [showPois]);
+  useEffect(() => save('showFix', showFix), [showFix]);
+  useEffect(() => save('showKeys', showKeys), [showKeys]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
   // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
@@ -208,6 +210,7 @@ export function App() {
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
   const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
   const pois = useMemo(() => (map ? mapPois(map.normalizedName) : []), [map]);
+  const shownPois = useMemo(() => pois.filter((p) => (isFixPoi(p) ? showFix : showKeys)), [pois, showFix, showKeys]);
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
   const route = useMemo(() => {
@@ -309,7 +312,7 @@ export function App() {
             extracts={shownExtracts}
             spawns={spawns}
             bdZones={showBd ? bdZones : NO_ZONES}
-            pois={showPois ? pois : NO_POIS}
+            pois={shownPois}
             colors={colors}
             floors={floors}
             floor={floor}
@@ -331,22 +334,31 @@ export function App() {
                 aria-label="Spawns"
                 dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
               />
-              {pois.length > 0 && (
-                <button
-                  className={`hud-ic${showPois ? ' on' : ''}`}
-                  onClick={() => setShowPois((v) => !v)}
-                  title="Keys & panels: electrical panels (Toolset), Toolsets, key spawns and locked doors (approximate, from the wiki map)"
-                  aria-label="Keys and panels"
-                  dangerouslySetInnerHTML={{ __html: IC_POI }}
-                />
-              )}
               {bdZones.length > 0 && (
                 <button
                   className={`hud-ic${showBd ? ' on' : ''}`}
                   onClick={() => setShowBd((v) => !v)}
-                  title="Black Division: show or hide their spawn zones (hover a diamond for every spawn point)"
+                  title="Black Division: show or hide their spawn zones and squad sizes"
                   aria-label="Black Division"
                   dangerouslySetInnerHTML={{ __html: IC_BD }}
+                />
+              )}
+              {pois.some(isFixPoi) && (
+                <button
+                  className={`hud-ic${showFix ? ' on' : ''}`}
+                  onClick={() => setShowFix((v) => !v)}
+                  title="Fix: electrical panels to repair, the drain button and where Toolsets spawn (approximate, from the wiki map)"
+                  aria-label="Panels and Toolsets"
+                  dangerouslySetInnerHTML={{ __html: IC_FIX }}
+                />
+              )}
+              {pois.some((p) => !isFixPoi(p)) && (
+                <button
+                  className={`hud-ic${showKeys ? ' on' : ''}`}
+                  onClick={() => setShowKeys((v) => !v)}
+                  title="Keys: where keys and charges spawn, and the doors they open (approximate, from the wiki map)"
+                  aria-label="Keys"
+                  dangerouslySetInnerHTML={{ __html: IC_POI }}
                 />
               )}
               <button
@@ -1250,8 +1262,11 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
 
 /** Map button icons (line icons, drawn in the button's text colour). */
 const NO_ZONES: BotZone[] = [];
-const NO_POIS: MapPoi[] = [];
-/** Keys & panels: a key. */
+/** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */
+const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'toolset';
+/** Fix: a wrench. */
+const IC_FIX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L2 10l8-8z" transform="scale(.9) translate(1 1)"/></svg>';
+/** Keys: a key. */
 const IC_POI = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/></svg>';
 /** Black Division: a diamond, matching their map marker. */
 const IC_BD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/><path d="M12 9l3 3-3 3-3-3z" fill="currentColor"/></svg>';
