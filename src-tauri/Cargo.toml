@@ -1,6 +1,6 @@
 [package]
 name = "escape-artist"
-version = "0.3.2"
+version = "0.3.3"
 description = "Escape from Tarkov quest overlay: quests per map, objective markers, loadout list and route from your spawn"
 edition = "2021"
 
