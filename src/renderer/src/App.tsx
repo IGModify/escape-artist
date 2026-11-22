@@ -20,6 +20,7 @@ import {
   type MapObjective,
 } from '@shared/questLogic';
 import { mapPois, type MapPoi } from '@shared/mapPois';
+import { mapBring, type BringSection } from '@shared/mapBring';
 import { defaultFloor, floorOf, floorSequence, floorsFor, type Floor } from '@shared/floors';
 import { imagesForObjective, type GuideImage } from '@shared/questImages';
 import { solveRoute } from '@shared/route';
@@ -211,6 +212,7 @@ export function App() {
   const required = useMemo(() => objectives.filter((o) => !o.objective.optional), [objectives]);
   const colors = useMemo(() => colorsFrom(main?.settings.markerColors), [main?.settings.markerColors]);
   const bring = useMemo(() => bringList(objectives), [objectives]);
+  const bringExtra = useMemo(() => (map ? mapBring(map.normalizedName) : NO_BRING), [map]);
   const extracts = useMemo(() => (map && settings ? extractsFor(map, settings.faction) : []), [map, settings]);
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
   const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
@@ -458,7 +460,7 @@ export function App() {
           mapKey={map?.normalizedName}
         />
       ) : null}
-      {tab === 'loadout' && <LoadoutPanel bring={bring} />}
+      {tab === 'loadout' && <LoadoutPanel bring={bring} extra={bringExtra} />}
       {tab === 'story' && (
         <StoryPanel
           settings={settings}
@@ -784,11 +786,44 @@ function QuestPanel(p: {
   );
 }
 
-function LoadoutPanel(p: { bring: ReturnType<typeof bringList> }) {
-  if (p.bring.length === 0) return <div className="empty">Nothing special to bring for your quests on this map.</div>;
+const NO_BRING: BringSection[] = [];
+
+/** The map's own must-brings (Terminal: the access item for each ending, optional helpers). */
+function MapBring({ sections }: { sections: BringSection[] }) {
+  return (
+    <>
+      {sections.map((s) => (
+        <section key={s.title} className="bring-map">
+          <h4>{s.title}</h4>
+          {s.intro && <p className="muted bring-intro">{s.intro}</p>}
+          {s.rows.map((r, i) => (
+            <div key={i} className="bring">
+              <span className="bring-icons">
+                {r.items.map((it) => (
+                  <img key={it.name} src={it.icon} alt="" title={it.name} onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
+                ))}
+              </span>
+              <div>
+                <div>
+                  {r.label && <b className="bring-label">{r.label}</b>}
+                  {r.items.map((it) => it.name).join(' + ')}
+                </div>
+                <div className="muted">{r.note}</div>
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
+    </>
+  );
+}
+
+function LoadoutPanel(p: { bring: ReturnType<typeof bringList>; extra: BringSection[] }) {
+  if (p.bring.length === 0 && p.extra.length === 0) return <div className="empty">Nothing special to bring for your quests on this map.</div>;
   const titles = { place: 'Items to place', key: 'Keys', use: 'Items to use', weapon: 'Required weapons' } as const;
   return (
     <div className="list">
+      <MapBring sections={p.extra} />
       {(Object.keys(titles) as (keyof typeof titles)[]).map((k) => {
         const rows = p.bring.filter((b) => b.kind === k);
         if (!rows.length) return null;

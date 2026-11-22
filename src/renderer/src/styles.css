@@ -552,3 +552,7 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .hud-right { display: flex; gap: 6px; align-items: flex-end; margin-left: auto; }
 .hud-view .hud-ic { display: inline-flex; align-items: center; gap: 3px; width: auto; padding: 0 6px; }
 .hud-deg { font: 700 10px/1 'Segoe UI', sans-serif; color: var(--muted); }
+/* Bring tab: a map's own must-brings (Terminal endings). Several icons for item pairs. */
+.bring-icons { display: flex; gap: 2px; flex: none; }
+.bring-intro { margin: 0 0 6px; font-size: 12px; }
+.bring-label { display: inline-block; min-width: 58px; margin-right: 6px; color: var(--accent); }
