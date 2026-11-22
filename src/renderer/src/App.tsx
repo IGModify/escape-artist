@@ -377,8 +377,8 @@ export function App() {
                 <button
                   className={`hud-ic${showFix ? ' on' : ''}`}
                   onClick={() => setShowFix((v) => !v)}
-                  title="Fix: electrical panels to repair and the pumping station drain button (approximate, from the wiki map)"
-                  aria-label="Panels and Toolsets"
+                  title="Electrical panels to repair, and the pumping station drain button (approximate, from the wiki map)"
+                  aria-label="Electrical panels"
                   dangerouslySetInnerHTML={{ __html: IC_FIX }}
                 />
               )}
@@ -437,17 +437,7 @@ export function App() {
                 dangerouslySetInnerHTML={{ __html: showMarkers ? IC_EYE : IC_EYE_OFF }}
               />
             {canTurn && (
-              <>
-                <button
-                  className="hud-ic"
-                  onClick={turnMap}
-                  title={`Rotate the map 90° clockwise${turn ? ` (now turned ${turn}°)` : ''}`}
-                  aria-label="Rotate map"
-                >
-                  <span dangerouslySetInnerHTML={{ __html: IC_ROTATE }} />
-                  {turn ? <span className="hud-deg">{turn}°</span> : null}
-                </button>
-              </>
+              <button className="hud-ic" onClick={turnMap} title="Rotate the map 90° clockwise" aria-label="Rotate map" dangerouslySetInnerHTML={{ __html: IC_ROTATE }} />
             )}
             </div>
             </div>
@@ -1444,15 +1434,15 @@ const NO_SPAWNS: { name: string | null; position: Vec3 }[] = [];
 const IC_EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const IC_EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.2 3.2M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20"/></svg>';
 /** Rotate: a clockwise arrow. */
-const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>';
 /** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */
 const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'button' || p.kind === 'toolset';
 /** Toolsets: a toolbox. */
 const IC_TOOLSET = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18"/></svg>';
 /** Explosive charges: a bomb with a lit fuse. */
 const IC_CHARGE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="7" fill="currentColor"/><path d="M15 9l2.5-2.5M17 4l1 1M20 3v2M21 7h-2"/></svg>';
-/** Fix: a wrench (Lucide's, ISC licence), the usual "repair" icon. */
-const IC_FIX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+/** Electrical panels: a lightning bolt, like the panel markers. */
+const IC_FIX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
 /** Keys: a key. */
 const IC_POI = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/></svg>';
 /** Black Division: a diamond, matching their map marker. */

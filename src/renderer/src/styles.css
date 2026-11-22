@@ -534,8 +534,6 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 }
 /* Map view controls (rotate) sit in their own group next to the toggles. */
 .hud-right { display: flex; gap: 6px; align-items: flex-end; margin-left: auto; }
-.hud-view .hud-ic { display: inline-flex; align-items: center; gap: 3px; width: auto; padding: 0 6px; }
-.hud-deg { font: 700 10px/1 'Segoe UI', sans-serif; color: var(--muted); }
 /* Bring tab: a map's own must-brings (Terminal endings). Several icons for item pairs. */
 .bring-intro { margin: -2px 0 8px; font-size: 12px; line-height: 1.45; }
 /* One card per item (or item pair): a fixed, centered icon column so every row's text lines up. */
@@ -591,4 +589,4 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .bring-name + .bring-name { margin-top: 2px; }
 .bring-plus { margin-right: 5px; color: var(--accent); font-weight: 800; }
 /* Small quest-style marker (Terminal's electrical panels): less map covered. */
-.mk.mk-sm { width: 20px; height: 20px; border-width: 1.5px; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.5); }
+.mk.mk-sm { width: 16px; height: 16px; border-width: 1.5px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55); }
