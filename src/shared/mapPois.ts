@@ -40,7 +40,7 @@ const TERMINAL: { kind: MapPoiKind; title: string; note: string; x: number; z: n
   { kind: 'panel', title: "Electrical panel No. 8", note: "Repair with a Toolset (guaranteed; by hand it often fails). Which panels need repair depends on how many players entered.", x: 176.7, z: -44.9 },
   { kind: 'panel', title: "Electrical panel No. 9", note: "Repair with a Toolset (guaranteed; by hand it often fails). Which panels need repair depends on how many players entered.", x: 163.6, z: 7.8 },
   { kind: 'panel', title: "Electrical panel No. 10", note: "Repair with a Toolset (guaranteed; by hand it often fails). Which panels need repair depends on how many players entered.", x: 179.2, z: 249.4 },
-  { kind: 'button', title: "Pumping station drain button", note: "Drains the water in the pumping station.", x: 174.9, z: 250.9 },
+  { kind: 'button', title: "Pumping station drain button", note: "Drains the water in the pumping station.", x: 174.9, z: 259.0 }, // moved into the building by hand (wiki spot sat outside it)
   { kind: 'toolset', title: "Toolset", note: "On the barrier in front of the BRDM", x: 129.6, z: 19.8 },
   { kind: 'toolset', title: "Toolset", note: "On the barrels", x: 106.7, z: 56.4 },
   { kind: 'toolset', title: "Toolset", note: "On the base of the pillar", x: 94.5, z: 25.8 },
