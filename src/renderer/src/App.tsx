@@ -83,7 +83,7 @@ export function App() {
       setTab('settings');
     }
   };
-  const [done, setDone] = useState<Set<string>>(new Set());
+
   const [pickingStart, setPickingStart] = useState(false);
   const [showSpawns, setShowSpawns] = useState<boolean>(() => load('showSpawns', true));
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
@@ -139,9 +139,11 @@ export function App() {
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
-  // Objectives ticked off are per raid.
-  const raidStartedAt = main?.raid.startedAt ?? null;
-  useEffect(() => setDone(new Set()), [raidStartedAt, mapId]);
+  // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
+  // survive restarts, raids and map changes until the quest itself is finished.
+  const objectivesDone = main?.settings.objectivesDone;
+  const viewingMode = main?.gameMode.viewing;
+  const done = useMemo(() => new Set(viewingMode ? (objectivesDone?.[viewingMode] ?? []) : []), [objectivesDone, viewingMode]);
 
   const settings = main?.settings;
   const maps = useMemo(() => (data ? playableMaps(data.maps, data.display) : []), [data]);
@@ -270,13 +272,8 @@ export function App() {
   }, []);
 
   const toggleDone = useCallback((id: string) => {
-    setDone((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+    void api.setObjectivesDone([id], !done.has(id));
+  }, [done]);
   const onPickStart = useCallback((p: Vec3) => {
     void api.setPlayer(p);
     setPickingStart(false);

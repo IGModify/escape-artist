@@ -22,7 +22,8 @@ pub fn defaults() -> Value {
         "hiddenQuests": [],
         "showStory": false,
         "storyDone": {},
-        "storyStarted": {}
+        "storyStarted": {},
+        "objectivesDone": {}
     })
 }
 

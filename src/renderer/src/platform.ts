@@ -216,6 +216,17 @@ export const api = {
     }
     await api.setSettings({ storyDone: { ...state.settings.storyDone, [mode]: [...set] } });
   },
+  /** Tick objectives done/undone for the mode being shown; saved, so ticks survive restarts and raids. */
+  setObjectivesDone: async (ids: string[], done: boolean) => {
+    await ready;
+    const mode = state.gameMode.viewing;
+    const set = new Set(state.settings.objectivesDone?.[mode] ?? []);
+    for (const id of ids) {
+      if (done) set.add(id);
+      else set.delete(id);
+    }
+    await api.setSettings({ objectivesDone: { ...state.settings.objectivesDone, [mode]: [...set] } });
+  },
   /** Track or stop tracking one or more quests (applies to every game mode). */
   setQuestHidden: async (taskIds: string | string[], hide: boolean) => {
     await ready;

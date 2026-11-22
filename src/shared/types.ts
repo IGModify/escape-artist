@@ -56,6 +56,8 @@ export interface Settings {
   questResetAt: Partial<Record<GameMode, string>>;
   /** Per mode: story chapters marked as started (names). Others needing a start show how to start them. */
   storyStarted?: Partial<Record<GameMode, string[]>>;
+  /** Per mode: objective ids you ticked (the game logs only record whole quests, not objectives). */
+  objectivesDone?: Partial<Record<GameMode, string[]>>;
   /** Show the main story chapters (from the wiki) as a checklist. Off: the wiki isn't contacted. */
   showStory: boolean;
   /** Per mode: story step ids ticked off (story progress is separate per profile). */
