@@ -68,6 +68,12 @@ export function convertJsonFiles(files: JsonFiles): { tasks: ApiTask[]; maps: Ap
       faction: e.faction ?? null,
       position: vec(e.position),
     })),
+    // A group is its leader plus escorts (the most each escort entry can bring).
+    bosses: (m.bosses ?? []).map((b: Raw) => ({
+      mob: String(b.mob ?? ''),
+      zones: (b.spawnLocations ?? []).map((l: Raw) => l.spawnKey).filter(Boolean),
+      size: 1 + (b.escorts ?? []).reduce((n: number, e: Raw) => n + Math.max(0, ...(e.amount ?? []).map((a: Raw) => Number(a.count) || 0)), 0),
+    })),
   }));
 
   const objective = (o: Raw): ApiObjective => {

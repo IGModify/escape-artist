@@ -19,7 +19,7 @@ const QUEST_ITEM_KEYS = ['id', 'name', 'shortName', 'iconLink'];
  * Bump whenever the trimming keeps different fields: saved copies made under older rules are then
  * downloaded again in full (their ETags would otherwise say "unchanged" forever).
  */
-export const TRIM_FORMAT = 2;
+export const TRIM_FORMAT = 3;
 
 const r1 = (n: unknown) => (typeof n === 'number' ? Math.round(n * 10) / 10 : n);
 
@@ -57,6 +57,14 @@ export function trimRaw(name: string, body: unknown): unknown {
           maps: map(data.maps, (m) => ({
             ...pick(m, MAP_KEYS),
             extracts: Array.isArray(m.extracts) ? (m.extracts as Obj[]).map((e) => pick(e, EXTRACT_KEYS)) : m.extracts,
+            // Boss/squad groups: only who, where and how many (for Black Division squad sizes).
+            bosses: Array.isArray(m.bosses)
+              ? (m.bosses as Obj[]).map((b) => ({
+                  mob: b.mob,
+                  spawnLocations: Array.isArray(b.spawnLocations) ? (b.spawnLocations as Obj[]).map((l) => ({ spawnKey: l.spawnKey })) : [],
+                  escorts: Array.isArray(b.escorts) ? (b.escorts as Obj[]).map((e) => ({ mob: e.mob, amount: e.amount })) : [],
+                }))
+              : undefined,
           })),
         },
       };

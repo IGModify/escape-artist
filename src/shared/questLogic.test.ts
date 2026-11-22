@@ -148,6 +148,9 @@ describe('Terminal (bundled snapshot)', () => {
     expect(zones.map((z) => z.zone).sort()).toEqual(['Zone1BD1HangarAmbush11', 'Zone1BD1PortAmbush1', 'Zone2BDPort28', 'Zone2BDPort30', 'Zone2BDPort31', 'Zone2BDPort32', 'Zone2BDWarehouse18']);
     expect(zones.reduce((n, z) => n + z.points.length, 0)).toBe(36);
     expect(zones.find((z) => z.zone === 'Zone1BD1HangarAmbush11')?.label).toBe('Hangar Ambush');
+    // Hangar: three groups of 3 + 2 + 3; Port 30: one group of 4.
+    expect(zones.find((z) => z.zone === 'Zone1BD1HangarAmbush11')).toMatchObject({ operatives: 8, groups: 3 });
+    expect(zones.find((z) => z.zone === 'Zone2BDPort30')).toMatchObject({ operatives: 4, groups: 1 });
     expect(blackDivisionZones(maps.find((m) => m.normalizedName === 'customs')!)).toEqual([]);
   });
 });

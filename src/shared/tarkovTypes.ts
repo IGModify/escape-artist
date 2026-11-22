@@ -59,6 +59,8 @@ export interface ApiMap {
   nameId: string | null;
   spawns: { zoneName: string | null; sides: string[] | null; categories: string[] | null; position: Vec3 }[] | null;
   extracts: { id: string; name: string | null; faction: string | null; position: Vec3 | null }[] | null;
+  /** Boss/squad groups (json.tarkov.dev only): who, which spawn zones, how many in the group. */
+  bosses?: { mob: string; zones: string[]; size: number }[];
 }
 
 /** Entry of tarkov-dev's src/data/maps.json used for drawing. */

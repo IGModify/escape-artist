@@ -406,6 +406,9 @@ export interface BotZone {
   /** The point closest to all the others (where the zone's marker goes). */
   at: Vec3;
   points: Vec3[];
+  /** Operatives that spawn here over a raid (all groups), and in how many groups; null if unknown. */
+  operatives: number | null;
+  groups: number;
 }
 
 /** Black Division zones are named like "Zone1BD1PortAmbush1" or "Zone2BDWarehouse18". */
@@ -426,7 +429,9 @@ export function blackDivisionZones(map: ApiMap): BotZone[] {
       const total = points.reduce((sum, b) => sum + flat(a, b), 0);
       if (total < best) [best, at] = [total, a];
     }
-    return { zone, label: zone.replace(BD_ZONE, '$1').replace(/([a-z])([A-Z])/g, '$1 $2'), at, points };
+    const squads = (map.bosses ?? []).filter((b) => b.mob === 'blackDivision' && b.zones.includes(zone));
+    const operatives = squads.length ? squads.reduce((n, b) => n + b.size, 0) : null;
+    return { zone, label: zone.replace(BD_ZONE, '$1').replace(/([a-z])([A-Z])/g, '$1 $2'), at, points, operatives, groups: squads.length };
   });
 }
 

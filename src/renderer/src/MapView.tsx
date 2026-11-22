@@ -234,10 +234,14 @@ export function MapView(props: MapViewProps) {
       );
       const n = z.points.length;
       L.marker(toLatLng(z.at), {
-        icon: L.divIcon({ className: `mk-wrap${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd-zone" style="--c:${c.bd}"></div>`, iconSize: [14, 14] }),
+        icon: L.divIcon({ className: `mk-wrap${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd-zone" style="--c:${c.bd}"></div>${z.operatives ? `<span class="bd-n" style="--c:${c.bd}">${z.operatives}</span>` : ''}`, iconSize: [14, 14] }),
         keyboard: false,
       })
-        .bindTooltip(`<b>Black Division</b> · ${escapeHtml(z.label)}<br><span class="muted">${n} spawn point${n === 1 ? '' : 's'}</span>${floorNote(z.at)}`, { direction: 'top', offset: [0, -6] })
+        .bindTooltip(
+          `<b>Black Division</b> · ${escapeHtml(z.label)}` +
+            (z.operatives ? `<br>${z.operatives} operative${z.operatives === 1 ? '' : 's'}${z.groups > 1 ? ` in ${z.groups} groups` : ''}` : '') +
+            `<br><span class="muted">${n} spawn point${n === 1 ? '' : 's'}</span>${floorNote(z.at)}`,
+ { direction: 'top', offset: [0, -6] })
         .on('mouseover', () => points.addTo(group))
         .on('mouseout', () => points.remove())
         .addTo(group);
