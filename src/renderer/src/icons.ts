@@ -31,13 +31,15 @@ function svg(body: string, size: number, width = 2): string {
 }
 
 /** Everything drawn on the map that has a color the user can change in Settings. */
-export type ColorKey = MarkerKind | 'spawn' | 'exfil' | 'player' | 'route' | 'bd';
+export type ColorKey = MarkerKind | 'spawn' | 'exfil' | 'player' | 'route' | 'bd' | 'panel' | 'mapKey';
 
 // Spread around the color wheel so no two neighbours are easy to confuse.
 export const DEFAULT_COLORS: Record<ColorKey, string> = {
   spawn: '#facc15',
   exfil: '#22c55e',
   bd: '#e11d48', // Black Division spawns (Terminal)
+  panel: '#67e8f9', // electrical panels / Toolsets (Terminal)
+  mapKey: '#fbbf24', // key spawns and the doors they open (Terminal)
   player: '#ffffff',
   route: '#e2e8f0',
   marker: '#2dd4bf', // teal, so markers don't share the spawns' yellow
@@ -61,6 +63,8 @@ export const COLOR_GROUPS: { title: string; keys: [ColorKey, string][] }[] = [
       ['spawn', 'PMC spawns'],
       ['exfil', 'Extracts'],
       ['bd', 'Black Division spawns'],
+      ['panel', 'Panels & Toolsets'],
+      ['mapKey', 'Keys & locked doors'],
       ['player', 'You'],
       ['route', 'Route line'],
     ],

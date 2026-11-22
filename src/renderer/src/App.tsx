@@ -19,6 +19,7 @@ import {
   type BotZone,
   type MapObjective,
 } from '@shared/questLogic';
+import { mapPois, type MapPoi } from '@shared/mapPois';
 import { defaultFloor, floorOf, floorSequence, floorsFor, type Floor } from '@shared/floors';
 import { imagesForObjective, type GuideImage } from '@shared/questImages';
 import { solveRoute } from '@shared/route';
@@ -91,6 +92,7 @@ export function App() {
   const [showSpawns, setShowSpawns] = useState<boolean>(() => load('showSpawns', true));
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
   const [showBd, setShowBd] = useState<boolean>(() => load('showBd', true));
+  const [showPois, setShowPois] = useState<boolean>(() => load('showPois', true));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
@@ -143,6 +145,7 @@ export function App() {
   useEffect(() => save('mapId', mapId), [mapId]);
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
   useEffect(() => save('showBd', showBd), [showBd]);
+  useEffect(() => save('showPois', showPois), [showPois]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
   // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
@@ -204,6 +207,7 @@ export function App() {
   const extracts = useMemo(() => (map && settings ? extractsFor(map, settings.faction) : []), [map, settings]);
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
   const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
+  const pois = useMemo(() => (map ? mapPois(map.normalizedName) : []), [map]);
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
   const route = useMemo(() => {
@@ -305,6 +309,7 @@ export function App() {
             extracts={shownExtracts}
             spawns={spawns}
             bdZones={showBd ? bdZones : NO_ZONES}
+            pois={showPois ? pois : NO_POIS}
             colors={colors}
             floors={floors}
             floor={floor}
@@ -326,6 +331,15 @@ export function App() {
                 aria-label="Spawns"
                 dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
               />
+              {pois.length > 0 && (
+                <button
+                  className={`hud-ic${showPois ? ' on' : ''}`}
+                  onClick={() => setShowPois((v) => !v)}
+                  title="Keys & panels: electrical panels (Toolset), Toolsets, key spawns and locked doors (approximate, from the wiki map)"
+                  aria-label="Keys and panels"
+                  dangerouslySetInnerHTML={{ __html: IC_POI }}
+                />
+              )}
               {bdZones.length > 0 && (
                 <button
                   className={`hud-ic${showBd ? ' on' : ''}`}
@@ -1067,6 +1081,7 @@ function ColorPreview({ k, c }: { k: ColorKey; c: string }) {
         <path d="M12 2l7 19-7-4-7 4z" fill={c} stroke="#000" strokeWidth="1.5" />
       </svg>
     );
+  if (k === 'panel' || k === 'mapKey') return <span className="poi pv" style={{ '--c': c } as CSSProperties} />;
   if (k === 'bd') return <span className="bd-zone pv" style={{ '--c': c } as CSSProperties} />;
   if (k === 'exfil') return <span className="exfil pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: exfilGlyph(11) }} />;
   return <span className="mk pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: glyph(k, 12) }} />;
@@ -1235,6 +1250,9 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
 
 /** Map button icons (line icons, drawn in the button's text colour). */
 const NO_ZONES: BotZone[] = [];
+const NO_POIS: MapPoi[] = [];
+/** Keys & panels: a key. */
+const IC_POI = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/></svg>';
 /** Black Division: a diamond, matching their map marker. */
 const IC_BD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/><path d="M12 9l3 3-3 3-3-3z" fill="currentColor"/></svg>';
 const IC_SPAWNS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>';

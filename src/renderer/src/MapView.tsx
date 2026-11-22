@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { clusterPoints } from '@shared/cluster';
 import { floorOf, onActiveFloor, type Floor } from '@shared/floors';
 import { killCount, MARKER_LABEL, objectiveItem, type BotZone, type MapObjective } from '@shared/questLogic';
+import type { MapPoi, MapPoiKind } from '@shared/mapPois';
 import type { RouteResult } from '@shared/route';
 import type { GuideImage } from '@shared/questImages';
 import type { ApiItem, MapDisplay } from '@shared/tarkovTypes';
@@ -29,6 +30,15 @@ function crsFor(d: MapDisplay): L.CRS {
   }) as L.CRS;
 }
 
+const poiSvg = (body: string) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+/** Panel: lightning bolt; Toolset: wrench; key; locked door: padlock. */
+const POI_GLYPH: Record<MapPoiKind, string> = {
+  panel: poiSvg('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),
+  toolset: poiSvg('<path d="M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L2 10l8-8z" transform="scale(.9) translate(1 1)"/>'),
+  key: poiSvg('<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/>'),
+  door: poiSvg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+};
+
 const toLatLng = (p: Vec3): L.LatLngTuple => [p.z, p.x];
 const boundsOf = (b: [[number, number], [number, number]]) => L.latLngBounds([b[0][1], b[0][0]], [b[1][1], b[1][0]]);
 
@@ -51,6 +61,8 @@ export interface MapViewProps {
   spawns: { name: string | null; position: Vec3 }[];
   /** Black Division spawn zones (Terminal); empty when hidden or the map has none. */
   bdZones: BotZone[];
+  /** Hand-placed spots (Terminal: panels, Toolsets, keys, locked doors); empty when hidden. */
+  pois: MapPoi[];
   /** Marker colors (defaults + the user's choices from Settings). */
   colors: Record<ColorKey, string>;
   /** The map's floors, lowest first (empty for single-level maps), and the one shown. */
@@ -228,6 +240,17 @@ export function MapView(props: MapViewProps) {
         .bindTooltip(`<b>Black Division</b> · ${escapeHtml(z.label)}<br><span class="muted">${n} spawn point${n === 1 ? '' : 's'}</span>${floorNote(z.at)}`, { direction: 'top', offset: [0, -6] })
         .on('mouseover', () => points.addTo(group))
         .on('mouseout', () => points.remove())
+        .addTo(group);
+    }
+
+    // Hand-placed spots from the wiki map (Terminal): small chips, marked approximate.
+    for (const poi of props.pois) {
+      const color = poi.kind === 'panel' || poi.kind === 'toolset' ? c.panel : c.mapKey;
+      L.marker(toLatLng(poi.position), {
+        icon: L.divIcon({ className: `mk-wrap${on(poi.position) ? '' : ' off-floor'}`, html: `<div class="poi" style="--c:${color}">${POI_GLYPH[poi.kind]}</div>`, iconSize: [18, 18] }),
+        keyboard: false,
+      })
+        .bindTooltip(`<b>${escapeHtml(poi.title)}</b><br>${escapeHtml(poi.note)}<br><span class="muted">Approximate spot · EFT wiki map</span>`, { direction: 'top', offset: [0, -8], className: 'poi-tip' })
         .addTo(group);
     }
 
@@ -529,7 +552,7 @@ export function MapView(props: MapViewProps) {
     return () => {
       m?.off('zoomend', draw);
     };
-  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.bdZones, props.display, props.colors, props.floors, props.floor, props.pinned]);
+  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.bdZones, props.pois, props.display, props.colors, props.floors, props.floor, props.pinned]);
 
   // A new screenshot position: pulse a few rings on the spot, so you see at a glance where you
   // are. The zoom stays as it is; the map only pans if you're off screen.
