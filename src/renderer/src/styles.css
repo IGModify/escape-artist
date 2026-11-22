@@ -538,20 +538,17 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .hud-deg { font: 700 10px/1 'Segoe UI', sans-serif; color: var(--muted); }
 /* Bring tab: a map's own must-brings (Terminal endings). Several icons for item pairs. */
 .bring-intro { margin: -2px 0 8px; font-size: 12px; line-height: 1.45; }
-/* One card per item (or item pair): fixed icon column so every row's text lines up. */
+/* One card per item (or item pair): a fixed, centered icon column so every row's text lines up. */
 .bring-card {
-  display: grid; grid-template-columns: 58px 1fr; gap: 10px; align-items: start;
-  padding: 9px 10px; margin-bottom: 6px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
+  display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center;
+  padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
 }
-.bring-icons { position: relative; width: 58px; height: 46px; }
+/* Icons stack top to bottom (a pair sits one above the other) and are centered in the column. */
+.bring-icons { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
 .bring-icons img {
-  position: absolute; top: 0; width: 44px; height: 44px; padding: 3px; box-sizing: border-box; object-fit: contain;
+  display: block; width: 44px; height: 44px; padding: 3px; box-sizing: border-box; object-fit: contain;
   background: #121417; border: 1px solid var(--line); border-radius: 8px;
 }
-.bring-icons.n1 img { left: 7px; }
-/* A pair (keycard + evidence) overlaps like a small stack. */
-.bring-icons.n2 img:first-child { left: 0; top: 0; z-index: 1; }
-.bring-icons.n2 img:last-child { left: 16px; top: 4px; opacity: 0.95; }
 .bring-body { min-width: 0; }
 .bring-tag {
   display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;

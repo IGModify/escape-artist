@@ -896,7 +896,7 @@ function MapBring({ sections }: { sections: BringSection[] }) {
           {s.intro && <p className="muted bring-intro">{s.intro}</p>}
           {s.rows.map((r, i) => (
             <div key={i} className="bring-card">
-              <span className={`bring-icons n${Math.min(r.items.length, 2)}`}>
+              <span className="bring-icons">
                 {r.items.slice(0, 2).map((it) => (
                   <img key={it.name} src={it.icon} alt="" title={it.name} onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
                 ))}
