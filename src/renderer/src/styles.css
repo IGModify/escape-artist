@@ -498,3 +498,6 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Settings and Story section titles: real titles, bold and white. */
+.list.settings section > h4, .list.settings .colors-h { color: var(--text); font-size: 14px; font-weight: 700; }
