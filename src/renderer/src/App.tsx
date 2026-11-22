@@ -96,6 +96,7 @@ export function App() {
   /** Per map: how far the user turned it, clockwise degrees. */
   const [turns, setTurns] = useState<Record<string, number>>(() => load('mapTurns', {}));
   const [showKeys, setShowKeys] = useState<boolean>(() => load('showKeys', true));
+  const [showCharges, setShowCharges] = useState<boolean>(() => load('showCharges', false));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
@@ -151,6 +152,7 @@ export function App() {
   useEffect(() => save('showFix', showFix), [showFix]);
   useEffect(() => save('mapTurns', turns), [turns]);
   useEffect(() => save('showKeys', showKeys), [showKeys]);
+  useEffect(() => save('showCharges', showCharges), [showCharges]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
   // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
@@ -217,7 +219,10 @@ export function App() {
   const canTurn = !!display?.svgPath;
   const turn = canTurn && map ? (turns[map.normalizedName] ?? 0) : 0;
   const turnMap = () => map && setTurns((t) => ({ ...t, [map.normalizedName]: ((t[map.normalizedName] ?? 0) + 90) % 360 }));
-  const shownPois = useMemo(() => pois.filter((p) => (isFixPoi(p) ? showFix : showKeys)), [pois, showFix, showKeys]);
+  const shownPois = useMemo(
+    () => pois.filter((p) => (p.kind === 'charge' ? showCharges : isFixPoi(p) ? showFix : showKeys)),
+    [pois, showFix, showKeys, showCharges],
+  );
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
   const route = useMemo(() => {
@@ -334,6 +339,7 @@ export function App() {
           />
           <div className="map-hud">
             <RouteSummary route={route} spawn={spawn} objectives={required} pickingStart={pickingStart} routeStart={routeStart} floors={floors} compact={overlay} />
+            <div className="hud-right">
             <div className="hud-buttons hud-group">
               <button
                 className={`hud-ic${showSpawns ? ' on' : ''}`}
@@ -342,15 +348,6 @@ export function App() {
                 aria-label="Spawns"
                 dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
               />
-              {canTurn && (
-                <button
-                  className={`hud-ic${turn ? ' on' : ''}`}
-                  onClick={turnMap}
-                  title={`Rotate the map 90° clockwise${turn ? ` (turned ${turn}°)` : ''}`}
-                  aria-label="Rotate map"
-                  dangerouslySetInnerHTML={{ __html: IC_ROTATE }}
-                />
-              )}
               {bdZones.length > 0 && (
                 <button
                   className={`hud-ic${showBd ? ' on' : ''}`}
@@ -364,18 +361,27 @@ export function App() {
                 <button
                   className={`hud-ic${showFix ? ' on' : ''}`}
                   onClick={() => setShowFix((v) => !v)}
-                  title="Fix: electrical panels to repair, the drain button and where Toolsets spawn (approximate, from the wiki map)"
+                  title="Fix: electrical panels to repair, the pumping station drain button and where Toolsets spawn (approximate, from the wiki map)"
                   aria-label="Panels and Toolsets"
                   dangerouslySetInnerHTML={{ __html: IC_FIX }}
                 />
               )}
-              {pois.some((p) => !isFixPoi(p)) && (
+              {pois.some((p) => p.kind === 'key' || p.kind === 'door') && (
                 <button
                   className={`hud-ic${showKeys ? ' on' : ''}`}
                   onClick={() => setShowKeys((v) => !v)}
-                  title="Keys: where keys and charges spawn, and the doors they open (approximate, from the wiki map)"
+                  title="Keys: where keys spawn and the doors they open (approximate, from the wiki map)"
                   aria-label="Keys"
                   dangerouslySetInnerHTML={{ __html: IC_POI }}
+                />
+              )}
+              {pois.some((p) => p.kind === 'charge') && (
+                <button
+                  className={`hud-ic${showCharges ? ' on' : ''}`}
+                  onClick={() => setShowCharges((v) => !v)}
+                  title="Explosive charges: where SZ-1 charges spawn (they blow the metal gate; off by default)"
+                  aria-label="Explosive charges"
+                  dangerouslySetInnerHTML={{ __html: IC_CHARGE }}
                 />
               )}
               <button
@@ -395,6 +401,21 @@ export function App() {
               {routeStart && (
                 <button className="hud-ic" onClick={() => void api.setPlayer(null)} title="Clear your position" aria-label="Clear" dangerouslySetInnerHTML={{ __html: IC_CLEAR }} />
               )}
+            </div>
+            {/* View control, kept apart from the show/hide toggles. */}
+            {canTurn && (
+              <div className="hud-buttons hud-group hud-view">
+                <button
+                  className="hud-ic"
+                  onClick={turnMap}
+                  title={`Rotate the map 90° clockwise${turn ? ` (now turned ${turn}°)` : ''}`}
+                  aria-label="Rotate map"
+                >
+                  <span dangerouslySetInnerHTML={{ __html: IC_ROTATE }} />
+                  {turn ? <span className="hud-deg">{turn}°</span> : null}
+                </button>
+              </div>
+            )}
             </div>
           </div>
           {svgError && <div className="map-msg">Map image failed to load: {svgError}</div>}
@@ -1282,7 +1303,9 @@ const NO_ZONES: BotZone[] = [];
 /** Rotate: a clockwise arrow. */
 const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
 /** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */
-const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'toolset';
+const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'button' || p.kind === 'toolset';
+/** Explosive charges: a bomb with a lit fuse. */
+const IC_CHARGE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="7"/><path d="M15 9l2.5-2.5M17 4l1 1M20 3v2M21 7h-2"/></svg>';
 /** Fix: a wrench. */
 const IC_FIX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L2 10l8-8z" transform="scale(.9) translate(1 1)"/></svg>';
 /** Keys: a key. */

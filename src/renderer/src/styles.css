@@ -542,3 +542,13 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 }
 .poi-list { margin: 3px 0 0; padding-left: 16px; }
 .poi-list li { margin: 1px 0; }
+/* Pumping station drain button: a round push-button (a ring around a drop), unlike the panel pills. */
+.poi-button {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: #0f2a30; color: var(--c); border: 2px solid var(--c);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.8), inset 0 0 0 2px #0b0d10;
+}
+/* Map view controls (rotate) sit in their own group next to the toggles. */
+.hud-right { display: flex; gap: 6px; align-items: flex-end; margin-left: auto; }
+.hud-view .hud-ic { display: inline-flex; align-items: center; gap: 3px; width: auto; padding: 0 6px; }
+.hud-deg { font: 700 10px/1 'Segoe UI', sans-serif; color: var(--muted); }

@@ -65,6 +65,9 @@ const POI_GLYPH: Record<MapPoiKind, string> = {
   toolset: poiSvg('<path d="M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L2 10l8-8z" transform="scale(.9) translate(1 1)"/>'),
   key: poiSvg('<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/>'),
   door: poiSvg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+  // Drain button: a water drop (it drains the pumping station).
+  button: poiSvg('<path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/>'),
+  charge: poiSvg('<circle cx="10" cy="14" r="7"/><path d="M15 9l2.5-2.5"/>'),
 };
 
 const toLatLng = (p: Vec3): L.LatLngTuple => [p.z, p.x];
@@ -165,6 +168,11 @@ export function MapView(props: MapViewProps) {
       baseTiles.current = null;
     };
   }, [props.display, props.rotation]);
+
+  // Crosshair while picking your start, toggled directly so Leaflet's own classes survive.
+  useEffect(() => {
+    el.current?.classList.toggle('picking', props.pickingStart);
+  }, [props.pickingStart, props.display, props.rotation]);
 
   // SVG drawing: parsed once per map; which groups show is decided by the floor effect below.
   useEffect(() => {
@@ -292,7 +300,7 @@ export function MapView(props: MapViewProps) {
       for (const { at, spots } of groupSpots(same.map((x) => x.position), 30)) {
         const here = same.filter((x) => spots.includes(x.position));
         const poi = here[0]!;
-        const color = poi.kind === 'panel' || poi.kind === 'toolset' ? c.panel : c.mapKey;
+        const color = poi.kind === 'panel' || poi.kind === 'button' || poi.kind === 'toolset' ? c.panel : c.mapKey;
         const n = here.length;
         const badge = n > 1 ? `<span class="poi-n">${n}</span>` : '';
         const num = /No\. (\d+)/.exec(poi.title)?.[1];
@@ -300,8 +308,10 @@ export function MapView(props: MapViewProps) {
           ? `<div class="poi-item" style="--c:${color}"><img src="${escapeHtml(poi.icon)}" alt="" referrerpolicy="no-referrer" decoding="async">${badge}</div>`
           : poi.kind === 'door'
             ? `<div class="poi-door" style="--c:${color}">${POI_GLYPH.door}</div>`
+            : poi.kind === 'button'
+              ? `<div class="poi-button" style="--c:${color}">${POI_GLYPH.button}</div>`
             : `<div class="poi-panel" style="--c:${color}">${POI_GLYPH.panel}${num ? `<b>${num}</b>` : ''}</div>`;
-        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : [34, 18];
+        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : poi.kind === 'button' ? [22, 22] : [34, 18];
         const notes = [...new Set(here.map((x) => x.note))];
         const tip =
           `<b>${escapeHtml(poi.title)}${n > 1 ? ` · ${n} spots` : ''}</b>` +
@@ -663,7 +673,9 @@ export function MapView(props: MapViewProps) {
         <div className="map-msg">Your screenshot position isn't on this map. Pick the map you're on from the list at the top.</div>
       )}
       {/* Route-number badges match the route line. */}
-      <div ref={el} className={`map${props.pickingStart ? ' picking' : ''}`} style={{ '--route': props.colors.route } as CSSProperties} />
+      {/* className stays fixed: Leaflet adds its own classes to this element, and React rewriting
+          className (e.g. for "picking") would wipe them and break the map's layout. */}
+      <div ref={el} className="map" style={{ '--route': props.colors.route } as CSSProperties} />
       {props.floors.length > 0 && props.floor && (
         <FloorPicker
           floors={props.floors}
