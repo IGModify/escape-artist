@@ -93,6 +93,8 @@ export function App() {
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
   const [showBd, setShowBd] = useState<boolean>(() => load('showBd', true));
   const [showFix, setShowFix] = useState<boolean>(() => load('showFix', true));
+  /** Per map: how far the user turned it, clockwise degrees. */
+  const [turns, setTurns] = useState<Record<string, number>>(() => load('mapTurns', {}));
   const [showKeys, setShowKeys] = useState<boolean>(() => load('showKeys', true));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
@@ -147,6 +149,7 @@ export function App() {
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
   useEffect(() => save('showBd', showBd), [showBd]);
   useEffect(() => save('showFix', showFix), [showFix]);
+  useEffect(() => save('mapTurns', turns), [turns]);
   useEffect(() => save('showKeys', showKeys), [showKeys]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
@@ -210,6 +213,10 @@ export function App() {
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
   const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
   const pois = useMemo(() => (map ? mapPois(map.normalizedName) : []), [map]);
+  // Turning works on drawn (SVG) maps; image-tile maps (Labs, Icebreaker) stay as they are.
+  const canTurn = !!display?.svgPath;
+  const turn = canTurn && map ? (turns[map.normalizedName] ?? 0) : 0;
+  const turnMap = () => map && setTurns((t) => ({ ...t, [map.normalizedName]: ((t[map.normalizedName] ?? 0) + 90) % 360 }));
   const shownPois = useMemo(() => pois.filter((p) => (isFixPoi(p) ? showFix : showKeys)), [pois, showFix, showKeys]);
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
@@ -313,6 +320,7 @@ export function App() {
             spawns={spawns}
             bdZones={showBd ? bdZones : NO_ZONES}
             pois={shownPois}
+            rotation={turn}
             colors={colors}
             floors={floors}
             floor={floor}
@@ -334,6 +342,15 @@ export function App() {
                 aria-label="Spawns"
                 dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
               />
+              {canTurn && (
+                <button
+                  className={`hud-ic${turn ? ' on' : ''}`}
+                  onClick={turnMap}
+                  title={`Rotate the map 90° clockwise${turn ? ` (turned ${turn}°)` : ''}`}
+                  aria-label="Rotate map"
+                  dangerouslySetInnerHTML={{ __html: IC_ROTATE }}
+                />
+              )}
               {bdZones.length > 0 && (
                 <button
                   className={`hud-ic${showBd ? ' on' : ''}`}
@@ -1262,6 +1279,8 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
 
 /** Map button icons (line icons, drawn in the button's text colour). */
 const NO_ZONES: BotZone[] = [];
+/** Rotate: a clockwise arrow. */
+const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
 /** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */
 const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'toolset';
 /** Fix: a wrench. */

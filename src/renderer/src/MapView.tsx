@@ -2,7 +2,7 @@ import L from 'leaflet';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { clusterPoints } from '@shared/cluster';
 import { floorOf, onActiveFloor, type Floor } from '@shared/floors';
-import { killCount, MARKER_LABEL, objectiveItem, type BotZone, type MapObjective } from '@shared/questLogic';
+import { groupSpots, killCount, MARKER_LABEL, objectiveItem, type BotZone, type MapObjective } from '@shared/questLogic';
 import type { MapPoi, MapPoiKind } from '@shared/mapPois';
 import type { RouteResult } from '@shared/route';
 import type { GuideImage } from '@shared/questImages';
@@ -19,18 +19,46 @@ function rotate(latLng: L.LatLng, rotation?: number): L.LatLng {
   return L.latLng(x * Math.sin(a) + y * Math.cos(a), x * Math.cos(a) - y * Math.sin(a));
 }
 
-function crsFor(d: MapDisplay): L.CRS {
+/**
+ * `turn` is the user's extra rotation, clockwise in degrees (0/90/180/270). It only changes how game
+ * coordinates are projected to the screen, so every marker, click and screenshot position stays
+ * exact; the drawing itself is turned to match (see rotateSvg). A higher coordinateRotation turns
+ * the view counter-clockwise, hence the minus.
+ */
+function crsFor(d: MapDisplay, turn = 0): L.CRS {
   const [sx, mx, sy, my] = d.transform ?? [1, 0, -1, 0];
+  const rotation = (d.coordinateRotation ?? 0) - turn;
   return L.extend({}, L.CRS.Simple, {
     transformation: new L.Transformation(sx, mx, sy * -1, my),
     projection: L.extend({}, L.Projection.LonLat, {
-      project: (ll: L.LatLng) => L.Projection.LonLat.project(rotate(ll, d.coordinateRotation)),
-      unproject: (p: L.Point) => rotate(L.Projection.LonLat.unproject(p), (d.coordinateRotation ?? 0) * -1),
+      project: (ll: L.LatLng) => L.Projection.LonLat.project(rotate(ll, rotation)),
+      unproject: (p: L.Point) => rotate(L.Projection.LonLat.unproject(p), rotation * -1),
     }),
   }) as L.CRS;
 }
 
+/**
+ * Turn the map drawing clockwise by `turn` inside its overlay. Leaflet places the overlay in the
+ * (rotated) bounding box, so the content is rotated within a viewBox with width and height swapped
+ * for quarter turns. Groups keep their ids, so floors still find them.
+ */
+function rotateSvg(outer: SVGSVGElement, content: Element, viewBox: string, turn: number) {
+  const [, , w, h] = viewBox.split(/[\s,]+/).map(Number) as [number, number, number, number];
+  // The drawing's own <svg> has no size and would take the (swapped) outer size: pin it to its own.
+  content.setAttribute('width', String(w));
+  content.setAttribute('height', String(h));
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  if (turn === 90) g.setAttribute('transform', `translate(${h} 0) rotate(90)`);
+  else if (turn === 180) g.setAttribute('transform', `rotate(180 ${w / 2} ${h / 2})`);
+  else g.setAttribute('transform', `translate(0 ${w}) rotate(-90)`);
+  outer.setAttribute('viewBox', turn === 180 ? `0 0 ${w} ${h}` : `0 0 ${h} ${w}`);
+  g.appendChild(content);
+  outer.appendChild(g);
+}
+
 const poiSvg = (body: string) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+/** Black Division: a crosshair. */
+const BD_GLYPH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>';
 /** Panel: lightning bolt; Toolset: wrench; key; locked door: padlock. */
 const POI_GLYPH: Record<MapPoiKind, string> = {
   panel: poiSvg('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),
@@ -63,6 +91,8 @@ export interface MapViewProps {
   bdZones: BotZone[];
   /** Hand-placed spots (Terminal: panels, Toolsets, keys, locked doors); empty when hidden. */
   pois: MapPoi[];
+  /** The user's turn of the map, clockwise degrees (0/90/180/270). */
+  rotation: number;
   /** Marker colors (defaults + the user's choices from Settings). */
   colors: Record<ColorKey, string>;
   /** The map's floors, lowest first (empty for single-level maps), and the one shown. */
@@ -92,7 +122,7 @@ export function MapView(props: MapViewProps) {
     const d = props.display;
     const bounds = boundsOf(d.bounds);
     const m = L.map(el.current, {
-      crs: crsFor(d),
+      crs: crsFor(d, props.rotation),
       attributionControl: false,
       zoomControl: false,
       zoomSnap: 0.25,
@@ -134,7 +164,7 @@ export function MapView(props: MapViewProps) {
       map.current = null;
       baseTiles.current = null;
     };
-  }, [props.display]);
+  }, [props.display, props.rotation]);
 
   // SVG drawing: parsed once per map; which groups show is decided by the floor effect below.
   useEffect(() => {
@@ -146,14 +176,15 @@ export function MapView(props: MapViewProps) {
     svg.innerHTML = props.svgText;
     const root = svg.children[0];
     const viewBox = root?.getAttribute('viewBox');
-    if (viewBox) svg.setAttribute('viewBox', viewBox);
+    if (viewBox && root && props.rotation) rotateSvg(svg, root, viewBox, props.rotation);
+    else if (viewBox) svg.setAttribute('viewBox', viewBox);
     const layer = L.svgOverlay(svg, boundsOf(d.svgBounds ?? d.bounds), { interactive: false }).addTo(m);
     layer.bringToBack();
     setSvgRoot(root ?? null);
     return () => {
       layer.remove();
     };
-  }, [props.display, props.svgText]);
+  }, [props.display, props.svgText, props.rotation]);
 
   // Floors: the ground stays visible (faded) under the floor being shown, like tarkov.dev.
   useEffect(() => {
@@ -178,12 +209,13 @@ export function MapView(props: MapViewProps) {
     }
     baseTiles.current?.setOpacity(fadeGround ? fade : 1);
     // Floors drawn only as image tiles (Labs, some Reserve buildings) go on top as their own layer.
-    if (!m || !upper?.tilePath || (svgRoot && upper.svgLayer)) return;
+    // Image tiles can't be turned with the drawing, so a turned map skips them (markers still dim).
+    if (!m || props.rotation || !upper?.tilePath || (svgRoot && upper.svgLayer)) return;
     const tiles = L.tileLayer(upper.tilePath, tileOptions(d, boundsOf(d.bounds))).addTo(m);
     return () => {
       tiles.remove();
     };
-  }, [props.display, props.floor, svgRoot]);
+  }, [props.display, props.floor, svgRoot, props.rotation]);
 
   // Markers, route, player.
   useEffect(() => {
@@ -225,37 +257,69 @@ export function MapView(props: MapViewProps) {
         .addTo(group);
     }
 
-    // Black Division (Terminal): one diamond per spawn zone; hovering shows every point the squad may spawn at.
+    // Black Division (Terminal): a pill per spawn zone with how many operatives come there. Hovering
+    // draws every point the squad may spawn at, tied to the pill.
     for (const z of props.bdZones) {
-      const points = L.layerGroup(
-        z.points.map((p) =>
-          L.circleMarker(toLatLng(p), { radius: 3, weight: 1, color: '#000000', fillColor: c.bd, fillOpacity: 0.95, interactive: false }),
+      const spread = L.layerGroup([
+        ...z.points.map((p) => L.polyline([toLatLng(z.at), toLatLng(p)], { color: c.bd, weight: 1.2, opacity: 0.75, dashArray: '3 4', interactive: false })),
+        ...z.points.map((p) =>
+          L.circleMarker(toLatLng(p), { radius: 3.5, weight: 1.5, color: '#ffffff', fillColor: c.bd, fillOpacity: 1, interactive: false }),
         ),
-      );
+      ]);
       const n = z.points.length;
+      const count = z.operatives ? `<b>${z.operatives}</b>` : '';
       L.marker(toLatLng(z.at), {
-        icon: L.divIcon({ className: `mk-wrap${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd-zone" style="--c:${c.bd}"></div>${z.operatives ? `<span class="bd-n" style="--c:${c.bd}">${z.operatives}</span>` : ''}`, iconSize: [14, 14] }),
+        icon: L.divIcon({ className: `mk-wrap mk-c${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd" style="--c:${c.bd}">${BD_GLYPH}${count}</div>`, iconSize: [40, 20] }),
         keyboard: false,
+        zIndexOffset: 200,
       })
         .bindTooltip(
           `<b>Black Division</b> · ${escapeHtml(z.label)}` +
-            (z.operatives ? `<br>${z.operatives} operative${z.operatives === 1 ? '' : 's'}${z.groups > 1 ? ` in ${z.groups} groups` : ''}` : '') +
-            `<br><span class="muted">${n} spawn point${n === 1 ? '' : 's'}</span>${floorNote(z.at)}`,
- { direction: 'top', offset: [0, -6] })
-        .on('mouseover', () => points.addTo(group))
-        .on('mouseout', () => points.remove())
+            (z.operatives ? `<br>${z.operatives} operative${z.operatives === 1 ? '' : 's'}${z.groups > 1 ? ` over ${z.groups} waves` : ''}` : '') +
+            `<br><span class="muted">${n} possible spawn point${n === 1 ? '' : 's'} · hover shows them</span>${floorNote(z.at)}`,
+          { direction: 'top', offset: [0, -10] },
+        )
+        .on('mouseover', () => spread.addTo(group))
+        .on('mouseout', () => spread.remove())
         .addTo(group);
     }
 
-    // Hand-placed spots from the wiki map (Terminal): small chips, marked approximate.
-    for (const poi of props.pois) {
-      const color = poi.kind === 'panel' || poi.kind === 'toolset' ? c.panel : c.mapKey;
-      L.marker(toLatLng(poi.position), {
-        icon: L.divIcon({ className: `mk-wrap${on(poi.position) ? '' : ' off-floor'}`, html: `<div class="poi" style="--c:${color}">${POI_GLYPH[poi.kind]}</div>`, iconSize: [18, 18] }),
-        keyboard: false,
-      })
-        .bindTooltip(`<b>${escapeHtml(poi.title)}</b><br>${escapeHtml(poi.note)}<br><span class="muted">Approximate spot · EFT wiki map</span>`, { direction: 'top', offset: [0, -8], className: 'poi-tip' })
-        .addTo(group);
+    // Hand-placed spots from the wiki map (Terminal). The same thing found close together (SZ-1
+    // charges, Armory keys) is one marker with a count; hovering shows each spot.
+    const byTitle = new Map<string, MapPoi[]>();
+    for (const poi of props.pois) byTitle.set(poi.title, [...(byTitle.get(poi.title) ?? []), poi]);
+    for (const same of byTitle.values()) {
+      for (const { at, spots } of groupSpots(same.map((x) => x.position), 30)) {
+        const here = same.filter((x) => spots.includes(x.position));
+        const poi = here[0]!;
+        const color = poi.kind === 'panel' || poi.kind === 'toolset' ? c.panel : c.mapKey;
+        const n = here.length;
+        const badge = n > 1 ? `<span class="poi-n">${n}</span>` : '';
+        const num = /No\. (\d+)/.exec(poi.title)?.[1];
+        const html = poi.icon
+          ? `<div class="poi-item" style="--c:${color}"><img src="${escapeHtml(poi.icon)}" alt="" referrerpolicy="no-referrer" decoding="async">${badge}</div>`
+          : poi.kind === 'door'
+            ? `<div class="poi-door" style="--c:${color}">${POI_GLYPH.door}</div>`
+            : `<div class="poi-panel" style="--c:${color}">${POI_GLYPH.panel}${num ? `<b>${num}</b>` : ''}</div>`;
+        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : [34, 18];
+        const notes = [...new Set(here.map((x) => x.note))];
+        const tip =
+          `<b>${escapeHtml(poi.title)}${n > 1 ? ` · ${n} spots` : ''}</b>` +
+          (notes.length > 1 ? `<ul class="poi-list">${notes.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : `<br>${escapeHtml(notes[0]!)}`) +
+          `<br><span class="muted">Approximate · from the EFT wiki map</span>`;
+        const marker = L.marker(toLatLng(at), {
+          icon: L.divIcon({ className: `mk-wrap mk-c${on(at) ? '' : ' off-floor'}`, html, iconSize: size }),
+          keyboard: false,
+          zIndexOffset: 300,
+        }).bindTooltip(tip, { direction: 'top', offset: [0, -size[1] / 2 - 2], className: 'poi-tip' });
+        if (n > 1) {
+          const dots = L.layerGroup(
+            here.map((x) => L.circleMarker(toLatLng(x.position), { radius: 3.5, weight: 1.5, color: '#000000', fillColor: color, fillOpacity: 1, interactive: false })),
+          );
+          marker.on('mouseover', () => dots.addTo(group)).on('mouseout', () => dots.remove());
+        }
+        marker.addTo(group);
+      }
     }
 
     // Extracts on another floor are dimmed and say which way to go (▲/▼).
@@ -548,7 +612,7 @@ export function MapView(props: MapViewProps) {
 
     const start = props.routeStart;
     if (start) {
-      const yaw = (props.player?.yaw ?? 0) + (props.display.coordinateRotation ?? 0);
+      const yaw = (props.player?.yaw ?? 0) + (props.display.coordinateRotation ?? 0) + props.rotation;
       // A soft ring around the arrow keeps "you" easy to find at any zoom.
       const html = `<div class="you" style="--c:${c.player}"><div class="player" style="transform: rotate(${yaw}deg)"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2l7 19-7-4-7 4z" fill="${c.player}" stroke="#000" stroke-width="1.5"/></svg></div></div>`;
       L.marker(toLatLng(start), { icon: L.divIcon({ className: 'mk-wrap', html, iconSize: [34, 34] }), zIndexOffset: 2000, interactive: false }).addTo(group);
@@ -556,7 +620,7 @@ export function MapView(props: MapViewProps) {
     return () => {
       m?.off('zoomend', draw);
     };
-  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.bdZones, props.pois, props.display, props.colors, props.floors, props.floor, props.pinned]);
+  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.bdZones, props.pois, props.display, props.colors, props.floors, props.floor, props.pinned, props.rotation]);
 
   // A new screenshot position: pulse a few rings on the spot, so you see at a glance where you
   // are. The zoom stays as it is; the map only pans if you're off screen.
@@ -591,7 +655,7 @@ export function MapView(props: MapViewProps) {
     };
     // Only a new screenshot (or a new map) triggers this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shotKey, props.display]);
+  }, [shotKey, props.display, props.rotation]);
 
   return (
     <>

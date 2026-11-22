@@ -508,4 +508,37 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .poi { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; background: #101418; color: var(--c); border: 1.5px solid var(--c); box-shadow: 0 1px 3px rgba(0,0,0,.6); }
 .poi.pv { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 .bd-zone.pv { display: inline-block; }
-.mk-wrap .bd-n { position: absolute; left: 11px; top: -7px; min-width: 13px; height: 13px; padding: 0 3px; border-radius: 7px; background: #0b0b0b; color: #fff; font: 700 9px/13px system-ui, sans-serif; text-align: center; border: 1px solid var(--c, #e11d48); }
+
+/* Terminal markers. Centered in their icon box so pills of any width sit on the spot. */
+.mk-wrap.mk-c { display: flex; align-items: center; justify-content: center; }
+/* Black Division: a solid pill (crosshair + operatives), the only solid red thing on the map. */
+.bd {
+  display: flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 5px; border-radius: 10px; white-space: nowrap;
+  background: var(--c); color: #fff; font: 700 11px/20px 'Segoe UI', sans-serif;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+.bd svg { flex: none; }
+/* Item spawns (Toolset, keys, charges): the in-game icon on a dark tile, like the item chips on quest markers. */
+.poi-item {
+  position: relative; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;
+  background: #15181c; border: 1.5px solid var(--c); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75), 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+.poi-item img { width: 24px; height: 24px; object-fit: contain; }
+.poi-n {
+  position: absolute; top: -8px; right: -9px; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 3px;
+  background: #f8fafc; color: #0b0d10; font: 800 10px/16px 'Segoe UI', sans-serif; text-align: center;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+}
+/* Electrical panels: a small solid pill with a bolt and the panel's number. */
+.poi-panel {
+  display: flex; align-items: center; gap: 1px; height: 18px; padding: 0 6px 0 3px; border-radius: 9px; white-space: nowrap;
+  background: var(--c); color: #0b0d10; font: 800 10px/18px 'Segoe UI', sans-serif;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.8);
+}
+/* Locked doors: a small outlined padlock. */
+.poi-door {
+  width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  background: #15181c; border: 1.5px solid var(--c); color: var(--c); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
+}
+.poi-list { margin: 3px 0 0; padding-left: 16px; }
+.poi-list li { margin: 1px 0; }
