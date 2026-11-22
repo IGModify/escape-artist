@@ -500,8 +500,8 @@ export function MapView(props: MapViewProps) {
     };
   }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.display, props.colors, props.floors, props.floor, props.pinned]);
 
-  // A new screenshot position: bring you into view (centre, one zoom step past the whole-map
-  // view) and pulse a few rings on the spot, so you see at a glance where you are.
+  // A new screenshot position: pulse a few rings on the spot, so you see at a glance where you
+  // are. The zoom stays as it is; the map only pans if you're off screen.
   const shot = props.player && props.player.file !== 'manual' ? props.player : null;
   const shotKey = shot ? `${shot.file}|${shot.position.x}|${shot.position.z}` : null;
   const [offMap, setOffMap] = useState(false);
@@ -515,9 +515,11 @@ export function MapView(props: MapViewProps) {
     const inside = boundsOf(props.display.bounds).pad(0.05).contains(at);
     setOffMap(!inside);
     if (!inside) return;
-    userMoved.current = true; // keep this view when the panel resizes
-    const overview = m.getBoundsZoom(boundsOf(props.display.bounds));
-    m.setView(at, Math.max(m.getZoom(), overview + 1), { animate: true });
+    // No zoom: the pulse shows where you are. Only pan if you're outside the visible part of the map.
+    if (!m.getBounds().contains(at)) {
+      userMoved.current = true; // keep this view when the panel resizes
+      m.panTo(at, { animate: true });
+    }
     const pulse = L.marker(at, {
       icon: L.divIcon({ className: 'mk-wrap', html: `<div class="you-pulse" style="--c:${props.colors.player}"><i></i><i></i><i></i></div>`, iconSize: [120, 120] }),
       interactive: false,
