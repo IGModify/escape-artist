@@ -98,6 +98,7 @@ export function App() {
   const [turns, setTurns] = useState<Record<string, number>>(() => load('mapTurns', {}));
   const [showKeys, setShowKeys] = useState<boolean>(() => load('showKeys', true));
   const [showCharges, setShowCharges] = useState<boolean>(() => load('showCharges', false));
+  const [showToolsets, setShowToolsets] = useState<boolean>(() => load('showToolsets', false));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
@@ -154,6 +155,7 @@ export function App() {
   useEffect(() => save('mapTurns', turns), [turns]);
   useEffect(() => save('showKeys', showKeys), [showKeys]);
   useEffect(() => save('showCharges', showCharges), [showCharges]);
+  useEffect(() => save('showToolsets', showToolsets), [showToolsets]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
   // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
@@ -222,8 +224,11 @@ export function App() {
   const turn = canTurn && map ? (turns[map.normalizedName] ?? 0) : 0;
   const turnMap = () => map && setTurns((t) => ({ ...t, [map.normalizedName]: ((t[map.normalizedName] ?? 0) + 90) % 360 }));
   const shownPois = useMemo(
-    () => pois.filter((p) => (p.kind === 'charge' ? showCharges : isFixPoi(p) ? showFix : showKeys)),
-    [pois, showFix, showKeys, showCharges],
+    () =>
+      pois.filter((p) =>
+        p.kind === 'charge' ? showCharges : p.kind === 'toolset' ? showToolsets : isFixPoi(p) ? showFix : showKeys,
+      ),
+    [pois, showFix, showKeys, showCharges, showToolsets],
   );
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
@@ -363,7 +368,7 @@ export function App() {
                 <button
                   className={`hud-ic${showFix ? ' on' : ''}`}
                   onClick={() => setShowFix((v) => !v)}
-                  title="Fix: electrical panels to repair, the pumping station drain button and where Toolsets spawn (approximate, from the wiki map)"
+                  title="Fix: electrical panels to repair and the pumping station drain button (approximate, from the wiki map)"
                   aria-label="Panels and Toolsets"
                   dangerouslySetInnerHTML={{ __html: IC_FIX }}
                 />
@@ -375,6 +380,15 @@ export function App() {
                   title="Keys: where keys spawn and the doors they open (approximate, from the wiki map)"
                   aria-label="Keys"
                   dangerouslySetInnerHTML={{ __html: IC_POI }}
+                />
+              )}
+              {pois.some((p) => p.kind === 'toolset') && (
+                <button
+                  className={`hud-ic${showToolsets ? ' on' : ''}`}
+                  onClick={() => setShowToolsets((v) => !v)}
+                  title="Toolsets: where Toolsets spawn, for sure panel repairs (off by default)"
+                  aria-label="Toolset spawns"
+                  dangerouslySetInnerHTML={{ __html: IC_TOOLSET }}
                 />
               )}
               {pois.some((p) => p.kind === 'charge') && (
@@ -1339,6 +1353,8 @@ const NO_ZONES: BotZone[] = [];
 const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
 /** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */
 const isFixPoi = (p: MapPoi) => p.kind === 'panel' || p.kind === 'button' || p.kind === 'toolset';
+/** Toolsets: a toolbox. */
+const IC_TOOLSET = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18"/></svg>';
 /** Explosive charges: a bomb with a lit fuse. */
 const IC_CHARGE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="14" r="7"/><path d="M15 9l2.5-2.5M17 4l1 1M20 3v2M21 7h-2"/></svg>';
 /** Fix: a wrench. */
