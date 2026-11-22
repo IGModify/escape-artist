@@ -501,3 +501,6 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 
 /* Settings and Story section titles: real titles, bold and white. */
 .list.settings section > h4, .list.settings .colors-h { color: var(--text); font-size: 14px; font-weight: 700; }
+
+/* Black Division spawn zone (Terminal): a dark diamond in their color. */
+.bd-zone { width: 10px; height: 10px; margin: 2px; transform: rotate(45deg); background: var(--c); border: 1.5px solid #0b0b0b; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }

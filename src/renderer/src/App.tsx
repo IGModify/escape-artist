@@ -12,8 +12,11 @@ import {
   mapForPosition,
   nearestSpawn,
   objectivesForMap,
+  blackDivisionZones,
+  isRareMap,
   playableMaps,
   playerSpawns,
+  type BotZone,
   type MapObjective,
 } from '@shared/questLogic';
 import { defaultFloor, floorOf, floorSequence, floorsFor, type Floor } from '@shared/floors';
@@ -87,6 +90,7 @@ export function App() {
   const [pickingStart, setPickingStart] = useState(false);
   const [showSpawns, setShowSpawns] = useState<boolean>(() => load('showSpawns', true));
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
+  const [showBd, setShowBd] = useState<boolean>(() => load('showBd', true));
   const [svgText, setSvgText] = useState<string | null>(null);
   const [svgError, setSvgError] = useState<string | null>(null);
 
@@ -132,11 +136,13 @@ export function App() {
   const raidMapNameId = main?.raid.mapNameId ?? null;
   useEffect(() => {
     if (!data || !raidMapNameId) return;
-    const m = mapByNameId(data.maps, raidMapNameId);
+    // Only maps in the list (the Ground Zero tutorial isn't, so the picker never goes blank).
+    const m = mapByNameId(playableMaps(data.maps, data.display), raidMapNameId);
     if (m) setMapId(m.id);
   }, [data, raidMapNameId]);
   useEffect(() => save('mapId', mapId), [mapId]);
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
+  useEffect(() => save('showBd', showBd), [showBd]);
   useEffect(() => save('showExtracts', showExtracts), [showExtracts]);
 
   // Objectives you ticked, saved per game mode: the logs only record whole quests, so these
@@ -197,6 +203,7 @@ export function App() {
   const bring = useMemo(() => bringList(objectives), [objectives]);
   const extracts = useMemo(() => (map && settings ? extractsFor(map, settings.faction) : []), [map, settings]);
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
+  const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
 
   const routeStart: Vec3 | null = main?.player?.position ?? null;
   const route = useMemo(() => {
@@ -226,8 +233,8 @@ export function App() {
   // fits it and another map is picked, switch (the map view then centres on you and pulses).
   useEffect(() => {
     if (!shot || !data) return;
-    const raidMap = raidMapNameId ? mapByNameId(data.maps, raidMapNameId) : null;
-    const target = mapForPosition(data.maps, data.display, shot.position, { raidMapId: raidMap?.id, currentMapId: mapId });
+    const raidMap = raidMapNameId ? mapByNameId(maps, raidMapNameId) : null;
+    const target = mapForPosition(maps, data.display, shot.position, { raidMapId: raidMap?.id, currentMapId: mapId });
     if (target && target.id !== mapId) setMapId(target.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shotKey, data]);
@@ -297,6 +304,7 @@ export function App() {
             player={main.player}
             extracts={shownExtracts}
             spawns={spawns}
+            bdZones={showBd ? bdZones : NO_ZONES}
             colors={colors}
             floors={floors}
             floor={floor}
@@ -318,6 +326,15 @@ export function App() {
                 aria-label="Spawns"
                 dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
               />
+              {bdZones.length > 0 && (
+                <button
+                  className={`hud-ic${showBd ? ' on' : ''}`}
+                  onClick={() => setShowBd((v) => !v)}
+                  title="Black Division: show or hide their spawn zones (hover a diamond for every spawn point)"
+                  aria-label="Black Division"
+                  dangerouslySetInnerHTML={{ __html: IC_BD }}
+                />
+              )}
               <button
                 className={`hud-ic${showExtracts ? ' on' : ''}`}
                 onClick={() => setShowExtracts((v) => !v)}
@@ -416,11 +433,17 @@ export function App() {
         </span>
         <select className="no-drag" value={mapId ?? ''} onChange={(e) => setMapId(e.target.value || null)}>
           <option value="">Choose map…</option>
-          {maps.map((m) => (
+          {maps.map((m, i) => [
+            // Rarely played maps (Terminal) sit at the end, under a divider.
+            isRareMap(m) && !isRareMap(maps[i - 1] ?? m) ? (
+              <option key="rare" disabled>
+                ──────────
+              </option>
+            ) : null,
             <option key={m.id} value={m.id}>
               {m.name}
-            </option>
-          ))}
+            </option>,
+          ])}
         </select>
         <span className="pill mode" title="Quests shown are for this game mode (change in Settings)">
           {GAME_MODE_LABEL[main.gameMode.viewing]}
@@ -1044,6 +1067,7 @@ function ColorPreview({ k, c }: { k: ColorKey; c: string }) {
         <path d="M12 2l7 19-7-4-7 4z" fill={c} stroke="#000" strokeWidth="1.5" />
       </svg>
     );
+  if (k === 'bd') return <span className="bd-zone pv" style={{ '--c': c } as CSSProperties} />;
   if (k === 'exfil') return <span className="exfil pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: exfilGlyph(11) }} />;
   return <span className="mk pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: glyph(k, 12) }} />;
 }
@@ -1210,6 +1234,9 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
 }
 
 /** Map button icons (line icons, drawn in the button's text colour). */
+const NO_ZONES: BotZone[] = [];
+/** Black Division: a diamond, matching their map marker. */
+const IC_BD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/><path d="M12 9l3 3-3 3-3-3z" fill="currentColor"/></svg>';
 const IC_SPAWNS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>';
 const IC_EXTRACTS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h6v16h-6"/><path d="M10 16l4-4-4-4M4 12h10"/></svg>';
 const IC_START = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';

@@ -351,8 +351,16 @@ export function mapForPosition(
 }
 
 /** Maps worth showing in the picker: ones we can draw. */
+/** Maps nobody raids for quests: kept out of the map list. */
+const HIDDEN_MAPS = new Set(['ground-zero-tutorial']);
+/** Maps played rarely (the story's end): listed last, after a divider. */
+const RARE_MAPS = new Set(['terminal']);
+export const isRareMap = (m: ApiMap) => RARE_MAPS.has(m.normalizedName);
+
 export function playableMaps(maps: ApiMap[], groups: MapDisplayGroup[]): ApiMap[] {
-  return maps.filter((m) => displayFor(groups, m)).sort((a, b) => a.name.localeCompare(b.name));
+  return maps
+    .filter((m) => !HIDDEN_MAPS.has(m.normalizedName) && displayFor(groups, m))
+    .sort((a, b) => Number(isRareMap(a)) - Number(isRareMap(b)) || a.name.localeCompare(b.name));
 }
 
 /** "ZoneFactorySide" -> "Factory Side"; internal ids (GUIDs) -> null. */
@@ -389,6 +397,37 @@ export function playerSpawns(map: ApiMap, faction: 'pmc' | 'scav'): { name: stri
       return forSide && (cats.length === 0 || cats.includes('player'));
     })
     .map((s) => ({ name: spawnLabel(s.zoneName), position: s.position }));
+}
+
+/** A Black Division bot zone: where a squad can appear, and every point it may spawn at. */
+export interface BotZone {
+  zone: string;
+  label: string;
+  /** The point closest to all the others (where the zone's marker goes). */
+  at: Vec3;
+  points: Vec3[];
+}
+
+/** Black Division zones are named like "Zone1BD1PortAmbush1" or "Zone2BDWarehouse18". */
+const BD_ZONE = /^Zone\d*BD\d*([A-Za-z]+?)\d*$/;
+
+/** Black Division spawn zones on a map (Terminal); empty on maps without them. */
+export function blackDivisionZones(map: ApiMap): BotZone[] {
+  const byZone = new Map<string, Vec3[]>();
+  for (const s of map.spawns ?? []) {
+    if (!s.zoneName || !BD_ZONE.test(s.zoneName)) continue;
+    byZone.set(s.zoneName, [...(byZone.get(s.zoneName) ?? []), s.position]);
+  }
+  const flat = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.z - b.z);
+  return [...byZone].map(([zone, points]) => {
+    let at = points[0]!;
+    let best = Infinity;
+    for (const a of points) {
+      const total = points.reduce((sum, b) => sum + flat(a, b), 0);
+      if (total < best) [best, at] = [total, a];
+    }
+    return { zone, label: zone.replace(BD_ZONE, '$1').replace(/([a-z])([A-Z])/g, '$1 $2'), at, points };
+  });
 }
 
 export function extractsFor(map: ApiMap, faction: 'pmc' | 'scav') {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { activeTasks, groupSpots, killAreas, killCount, mapForPosition, playableMaps, objectiveItem, objectiveLocations, questStates, bringList, displayFor, extractsFor, isTransitTask, markerKind, nearestSpawn, objectivesForMap, playerSpawns, spawnLabel } from './questLogic';
+import { convertJsonFiles, type JsonFiles } from './jsonSource';
+import { activeTasks, blackDivisionZones, isRareMap, groupSpots, killAreas, killCount, mapForPosition, playableMaps, objectiveItem, objectiveLocations, questStates, bringList, displayFor, extractsFor, isTransitTask, markerKind, nearestSpawn, objectivesForMap, playerSpawns, spawnLabel } from './questLogic';
 import type { ApiMap, ApiObjective, ApiTask } from './tarkovTypes';
 import { pos } from './testFixtures';
 
@@ -128,6 +129,26 @@ describe('maps', () => {
     const groups = [{ normalizedName: 'factory', maps: [{ key: 'f', projection: 'interactive', svgPath: 'x.svg', bounds: [[0, 0], [1, 1]] as [[number, number], [number, number]] }] }];
     expect(displayFor(groups, { ...map, normalizedName: 'night-factory' })?.key).toBe('f');
     expect(displayFor(groups, map)).toBeNull();
+  });
+});
+
+describe('Terminal (bundled snapshot)', () => {
+  const dir = 'build/snapshot/';
+  const has = existsSync(`${dir}maps.json`);
+  const read = (n: string) => JSON.parse(readFileSync(`${dir}${n}.json`, 'utf8'));
+  it.skipIf(!has)('lists Terminal last, without the tutorial, and finds its Black Division zones', () => {
+    const files = Object.fromEntries(['tasks', 'tasks_en', 'maps', 'maps_en', 'items_en', 'traders', 'traders_en'].map((n) => [n, read(n)])) as JsonFiles;
+    const { maps } = convertJsonFiles(files);
+    const list = playableMaps(maps, read('display'));
+    expect(list.at(-1)?.normalizedName).toBe('terminal');
+    expect(list.filter(isRareMap)).toHaveLength(1);
+    expect(list.some((m) => m.normalizedName === 'ground-zero-tutorial')).toBe(false);
+    expect(list.some((m) => m.normalizedName === 'ground-zero')).toBe(true);
+    const zones = blackDivisionZones(list.at(-1)!);
+    expect(zones.map((z) => z.zone).sort()).toEqual(['Zone1BD1HangarAmbush11', 'Zone1BD1PortAmbush1', 'Zone2BDPort28', 'Zone2BDPort30', 'Zone2BDPort31', 'Zone2BDPort32', 'Zone2BDWarehouse18']);
+    expect(zones.reduce((n, z) => n + z.points.length, 0)).toBe(36);
+    expect(zones.find((z) => z.zone === 'Zone1BD1HangarAmbush11')?.label).toBe('Hangar Ambush');
+    expect(blackDivisionZones(maps.find((m) => m.normalizedName === 'customs')!)).toEqual([]);
   });
 });
 

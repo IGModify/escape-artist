@@ -2,7 +2,7 @@ import L from 'leaflet';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { clusterPoints } from '@shared/cluster';
 import { floorOf, onActiveFloor, type Floor } from '@shared/floors';
-import { killCount, MARKER_LABEL, objectiveItem, type MapObjective } from '@shared/questLogic';
+import { killCount, MARKER_LABEL, objectiveItem, type BotZone, type MapObjective } from '@shared/questLogic';
 import type { RouteResult } from '@shared/route';
 import type { GuideImage } from '@shared/questImages';
 import type { ApiItem, MapDisplay } from '@shared/tarkovTypes';
@@ -49,6 +49,8 @@ export interface MapViewProps {
   onToggleDone: (objectiveId: string) => void;
   /** Player spawn points for your side; empty when hidden. */
   spawns: { name: string | null; position: Vec3 }[];
+  /** Black Division spawn zones (Terminal); empty when hidden or the map has none. */
+  bdZones: BotZone[];
   /** Marker colors (defaults + the user's choices from Settings). */
   colors: Record<ColorKey, string>;
   /** The map's floors, lowest first (empty for single-level maps), and the one shown. */
@@ -208,6 +210,24 @@ export function MapView(props: MapViewProps) {
         interactive: true,
       })
         .bindTooltip((isMine ? 'Your spawn' : s.name ? `Spawn: ${escapeHtml(s.name)}` : 'PMC spawn') + floorNote(s.position), { direction: 'top' })
+        .addTo(group);
+    }
+
+    // Black Division (Terminal): one diamond per spawn zone; hovering shows every point the squad may spawn at.
+    for (const z of props.bdZones) {
+      const points = L.layerGroup(
+        z.points.map((p) =>
+          L.circleMarker(toLatLng(p), { radius: 3, weight: 1, color: '#000000', fillColor: c.bd, fillOpacity: 0.95, interactive: false }),
+        ),
+      );
+      const n = z.points.length;
+      L.marker(toLatLng(z.at), {
+        icon: L.divIcon({ className: `mk-wrap${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd-zone" style="--c:${c.bd}"></div>`, iconSize: [14, 14] }),
+        keyboard: false,
+      })
+        .bindTooltip(`<b>Black Division</b> · ${escapeHtml(z.label)}<br><span class="muted">${n} spawn point${n === 1 ? '' : 's'}</span>${floorNote(z.at)}`, { direction: 'top', offset: [0, -6] })
+        .on('mouseover', () => points.addTo(group))
+        .on('mouseout', () => points.remove())
         .addTo(group);
     }
 
@@ -509,7 +529,7 @@ export function MapView(props: MapViewProps) {
     return () => {
       m?.off('zoomend', draw);
     };
-  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.display, props.colors, props.floors, props.floor, props.pinned]);
+  }, [props.objectives, props.done, props.route, props.routeStart, props.player, props.extracts, props.spawns, props.bdZones, props.display, props.colors, props.floors, props.floor, props.pinned]);
 
   // A new screenshot position: pulse a few rings on the spot, so you see at a glance where you
   // are. The zoom stays as it is; the map only pans if you're off screen.
