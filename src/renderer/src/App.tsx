@@ -640,13 +640,9 @@ function RouteSummary(p: {
       ? floorSequence([p.routeStart, ...p.route.stops.map((s) => s.point), ...(p.route.end ? [p.route.end.point] : [])], p.floors)
       : [];
   if (!p.route) {
-    return (
-      <div className="hud-text">
-        {p.objectives.length
-          ? 'In raid, press your screenshot key (PrtSc) to plot the route from where you are.'
-          : 'No active quest objectives on this map.'}
-      </div>
-    );
+    // Nothing to route to: no message, just the spacer that keeps the buttons on the right.
+    if (!p.objectives.length) return <div className="grow" />;
+    return <div className="hud-text">In raid, press your screenshot key (PrtSc) to plot the route from where you are.</div>;
   }
   // Overlay: keep the map clear; an empty spacer keeps the buttons on the right.
   if (p.compact) return <div className="grow" />;
@@ -1199,7 +1195,7 @@ function ColorPreview({ k, c }: { k: ColorKey; c: string }) {
       </svg>
     );
   if (k === 'panel' || k === 'mapKey') return <span className="poi pv" style={{ '--c': c } as CSSProperties} />;
-  if (k === 'bd') return <span className="bd-zone pv" style={{ '--c': c } as CSSProperties} />;
+  if (k === 'bd') return <span className="mk pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: IC_BD.replace('width="16" height="16"', 'width="12" height="12"') }} />;
   if (k === 'exfil') return <span className="exfil pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: exfilGlyph(11) }} />;
   return <span className="mk pv" style={{ '--c': c } as CSSProperties} dangerouslySetInnerHTML={{ __html: glyph(k, 12) }} />;
 }
@@ -1387,7 +1383,7 @@ const IC_FIX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stro
 /** Keys: a key. */
 const IC_POI = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M18 5l2 2"/></svg>';
 /** Black Division: a diamond, matching their map marker. */
-const IC_BD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/><path d="M12 9l3 3-3 3-3-3z" fill="currentColor"/></svg>';
+const IC_BD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1.4" fill="currentColor"/><circle cx="15" cy="12" r="1.4" fill="currentColor"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>';
 const IC_SPAWNS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>';
 const IC_EXTRACTS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h6v16h-6"/><path d="M10 16l4-4-4-4M4 12h10"/></svg>';
 const IC_START = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';

@@ -59,8 +59,8 @@ function rotateSvg(outer: SVGSVGElement, content: Element, viewBox: string, turn
 const poiSvg = (body: string) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 /** Electrical panel, drawn like a quest marker: a lightning bolt at quest-glyph size. */
 const PANEL_GLYPH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
-/** Black Division: a crosshair. */
-const BD_GLYPH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>';
+/** Black Division: a skull (not a crosshair, which reads as a kill-quest marker). Same as its toggle. */
+const BD_GLYPH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1.4" fill="currentColor"/><circle cx="15" cy="12" r="1.4" fill="currentColor"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>';
 /** Panel: lightning bolt; Toolset: wrench; key; locked door: padlock. */
 const POI_GLYPH: Record<MapPoiKind, string> = {
   panel: poiSvg('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),
@@ -277,9 +277,9 @@ export function MapView(props: MapViewProps) {
         ),
       ]);
       const n = z.points.length;
-      const count = z.operatives ? `<b>${z.operatives}</b>` : '';
+      const count = z.operatives ? `<span class="mk-count">${z.operatives}</span>` : '';
       L.marker(toLatLng(z.at), {
-        icon: L.divIcon({ className: `mk-wrap mk-c${on(z.at) ? '' : ' off-floor'}`, html: `<div class="bd" style="--c:${c.bd}">${BD_GLYPH}${count}</div>`, iconSize: [40, 20] }),
+        icon: L.divIcon({ className: `mk-wrap mk-c${on(z.at) ? '' : ' off-floor'}`, html: `<div class="mk mk-bd" style="--c:${c.bd}">${BD_GLYPH}${count}</div>`, iconSize: [26, 26] }),
         keyboard: false,
         zIndexOffset: 200,
       })

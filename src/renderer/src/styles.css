@@ -502,22 +502,12 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 /* Settings and Story section titles: real titles, bold and white. */
 .list.settings section > h4, .list.settings .colors-h { color: var(--text); font-size: 14px; font-weight: 700; }
 
-/* Black Division spawn zone (Terminal): a dark diamond in their color. */
-.bd-zone { width: 10px; height: 10px; margin: 2px; transform: rotate(45deg); background: var(--c); border: 1.5px solid #0b0b0b; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
 /* Hand-placed spots (Terminal): a dark chip with a colored glyph and rim. */
 .poi { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; background: #101418; color: var(--c); border: 1.5px solid var(--c); box-shadow: 0 1px 3px rgba(0,0,0,.6); }
 .poi.pv { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.bd-zone.pv { display: inline-block; }
 
 /* Terminal markers. Centered in their icon box so pills of any width sit on the spot. */
 .mk-wrap.mk-c { display: flex; align-items: center; justify-content: center; }
-/* Black Division: a solid pill (crosshair + operatives), the only solid red thing on the map. */
-.bd {
-  display: flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px 0 5px; border-radius: 10px; white-space: nowrap;
-  background: var(--c); color: #fff; font: 700 11px/20px 'Segoe UI', sans-serif;
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.8), 0 2px 6px rgba(0, 0, 0, 0.45);
-}
-.bd svg { flex: none; }
 /* Item spawns (Toolset, keys, charges): the in-game icon on a dark tile, like the item chips on quest markers. */
 .poi-item {
   position: relative; width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;
@@ -550,3 +540,5 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .bring-icons { display: flex; gap: 2px; flex: none; }
 .bring-intro { margin: 0 0 6px; font-size: 12px; }
 .bring-label { display: inline-block; min-width: 58px; margin-right: 6px; color: var(--accent); }
+/* Black Division: a quest-style marker with a skull, solid-tinted so it stands apart from quests. */
+.mk-bd { background: color-mix(in srgb, var(--c) 35%, #0c0e10); color: #fff; }
