@@ -67,6 +67,17 @@ const BY_MAP: Record<string, MapPoi[]> = {
   terminal: TERMINAL.map(({ x, z, ...p }) => ({ ...p, position: { x, y: Y, z }, icon: ICONS[p.title] ?? null })),
 };
 
+/** Extracts tarkov.dev doesn't list yet, placed the same way as the spots above. */
+const EXTRACTS: Record<string, { id: string; name: string; faction: string; position: Vec3 }[]> = {
+  // At the end of the pier, behind the Pier door. Boat seats depend on how many entered the raid.
+  terminal: [{ id: 'terminal-zubr-boat', name: 'Zubr Boat', faction: 'pmc', position: { x: -297, y: Y, z: 79 } }],
+};
+
+/** Extra extracts for a map (normalizedName). */
+export function mapExtracts(normalizedName: string) {
+  return EXTRACTS[normalizedName] ?? [];
+}
+
 /** Hand-placed points for a map (normalizedName); empty for maps tarkov.dev covers. */
 export function mapPois(normalizedName: string): MapPoi[] {
   return BY_MAP[normalizedName] ?? [];

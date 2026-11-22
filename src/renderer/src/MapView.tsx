@@ -57,6 +57,8 @@ function rotateSvg(outer: SVGSVGElement, content: Element, viewBox: string, turn
 }
 
 const poiSvg = (body: string) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+/** Electrical panel, drawn like a quest marker: a lightning bolt at quest-glyph size. */
+const PANEL_GLYPH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
 /** Black Division: a crosshair. */
 const BD_GLYPH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>';
 /** Panel: lightning bolt; Toolset: wrench; key; locked door: padlock. */
@@ -303,15 +305,14 @@ export function MapView(props: MapViewProps) {
         const color = poi.kind === 'panel' || poi.kind === 'button' || poi.kind === 'toolset' ? c.panel : c.mapKey;
         const n = here.length;
         const badge = n > 1 ? `<span class="poi-n">${n}</span>` : '';
-        const num = /No\. (\d+)/.exec(poi.title)?.[1];
         const html = poi.icon
           ? `<div class="poi-item" style="--c:${color}"><img src="${escapeHtml(poi.icon)}" alt="" referrerpolicy="no-referrer" decoding="async">${badge}</div>`
           : poi.kind === 'door'
             ? `<div class="poi-door" style="--c:${color}">${POI_GLYPH.door}</div>`
             : poi.kind === 'button'
               ? `<div class="poi-button" style="--c:${color}">${POI_GLYPH.button}</div>`
-            : `<div class="poi-panel" style="--c:${color}">${POI_GLYPH.panel}${num ? `<b>${num}</b>` : ''}</div>`;
-        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : poi.kind === 'button' ? [22, 22] : [34, 18];
+            : `<div class="mk" style="--c:${color}">${PANEL_GLYPH}</div>`;
+        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : poi.kind === 'button' ? [22, 22] : [26, 26];
         const notes = [...new Set(here.map((x) => x.note))];
         const tip =
           `<b>${escapeHtml(poi.title)}${n > 1 ? ` · ${n} spots` : ''}</b>` +

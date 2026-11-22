@@ -19,7 +19,7 @@ import {
   type BotZone,
   type MapObjective,
 } from '@shared/questLogic';
-import { mapPois, type MapPoi } from '@shared/mapPois';
+import { mapExtracts, mapPois, type MapPoi } from '@shared/mapPois';
 import { mapBring, type BringSection } from '@shared/mapBring';
 import { defaultFloor, floorOf, floorSequence, floorsFor, type Floor } from '@shared/floors';
 import { imagesForObjective, type GuideImage } from '@shared/questImages';
@@ -93,6 +93,8 @@ export function App() {
   const [showSpawns, setShowSpawns] = useState<boolean>(() => load('showSpawns', true));
   const [showExtracts, setShowExtracts] = useState<boolean>(() => load('showExtracts', true));
   const [showBd, setShowBd] = useState<boolean>(() => load('showBd', true));
+  /** Master switch: off hides every marker (quests, route, spawns, extracts, map spots); you stay. */
+  const [showMarkers, setShowMarkers] = useState<boolean>(() => load('showMarkers', true));
   const [showFix, setShowFix] = useState<boolean>(() => load('showFix', true));
   /** Per map: how far the user turned it, clockwise degrees. */
   const [turns, setTurns] = useState<Record<string, number>>(() => load('mapTurns', {}));
@@ -151,6 +153,7 @@ export function App() {
   useEffect(() => save('mapId', mapId), [mapId]);
   useEffect(() => save('showSpawns', showSpawns), [showSpawns]);
   useEffect(() => save('showBd', showBd), [showBd]);
+  useEffect(() => save('showMarkers', showMarkers), [showMarkers]);
   useEffect(() => save('showFix', showFix), [showFix]);
   useEffect(() => save('mapTurns', turns), [turns]);
   useEffect(() => save('showKeys', showKeys), [showKeys]);
@@ -215,7 +218,13 @@ export function App() {
   const colors = useMemo(() => colorsFrom(main?.settings.markerColors), [main?.settings.markerColors]);
   const bring = useMemo(() => bringList(objectives), [objectives]);
   const bringExtra = useMemo(() => (map ? mapBring(map.normalizedName) : NO_BRING), [map]);
-  const extracts = useMemo(() => (map && settings ? extractsFor(map, settings.faction) : []), [map, settings]);
+  const extracts = useMemo(
+    () =>
+      map && settings
+        ? [...extractsFor(map, settings.faction), ...mapExtracts(map.normalizedName).filter((e) => e.faction === 'shared' || e.faction === settings.faction)]
+        : [],
+    [map, settings],
+  );
   const spawns = useMemo(() => (map && settings && showSpawns ? playerSpawns(map, settings.faction) : []), [map, settings, showSpawns]);
   const bdZones = useMemo(() => (map ? blackDivisionZones(map) : []), [map]);
   const pois = useMemo(() => (map ? mapPois(map.normalizedName) : []), [map]);
@@ -323,15 +332,15 @@ export function App() {
           <MapView
             display={display}
             svgText={svgText}
-            objectives={objectives}
+            objectives={showMarkers ? objectives : NO_OBJECTIVES}
             done={done}
-            route={route}
+            route={showMarkers ? route : null}
             routeStart={routeStart}
             player={main.player}
-            extracts={shownExtracts}
-            spawns={spawns}
-            bdZones={showBd ? bdZones : NO_ZONES}
-            pois={shownPois}
+            extracts={showMarkers ? shownExtracts : NO_EXTRACTS}
+            spawns={showMarkers ? spawns : NO_SPAWNS}
+            bdZones={showMarkers && showBd ? bdZones : NO_ZONES}
+            pois={showMarkers ? shownPois : NO_POIS}
             rotation={turn}
             colors={colors}
             floors={floors}
@@ -418,9 +427,17 @@ export function App() {
                 <button className="hud-ic" onClick={() => void api.setPlayer(null)} title="Clear your position" aria-label="Clear" dangerouslySetInnerHTML={{ __html: IC_CLEAR }} />
               )}
             </div>
-            {/* View control, kept apart from the show/hide toggles. */}
+            {/* View controls, kept apart from the per-layer toggles. */}
+            <div className="hud-buttons hud-group hud-view">
+              <button
+                className={`hud-ic${showMarkers ? '' : ' on'}`}
+                onClick={() => setShowMarkers((v) => !v)}
+                title={showMarkers ? 'Hide all markers (clean map)' : 'Show all markers again'}
+                aria-label={showMarkers ? 'Hide all markers' : 'Show all markers'}
+                dangerouslySetInnerHTML={{ __html: showMarkers ? IC_EYE : IC_EYE_OFF }}
+              />
             {canTurn && (
-              <div className="hud-buttons hud-group hud-view">
+              <>
                 <button
                   className="hud-ic"
                   onClick={turnMap}
@@ -430,8 +447,9 @@ export function App() {
                   <span dangerouslySetInnerHTML={{ __html: IC_ROTATE }} />
                   {turn ? <span className="hud-deg">{turn}°</span> : null}
                 </button>
-              </div>
+              </>
             )}
+            </div>
             </div>
           </div>
           {svgError && <div className="map-msg">Map image failed to load: {svgError}</div>}
@@ -1349,6 +1367,13 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
 
 /** Map button icons (line icons, drawn in the button's text colour). */
 const NO_ZONES: BotZone[] = [];
+const NO_POIS: MapPoi[] = [];
+const NO_OBJECTIVES: MapObjective[] = [];
+const NO_EXTRACTS: { id: string; name: string | null; position: Vec3 }[] = [];
+const NO_SPAWNS: { name: string | null; position: Vec3 }[] = [];
+/** All markers: an eye (shown) / a struck-out eye (hidden). */
+const IC_EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const IC_EYE_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-2.2 3.2M6.6 6.6A17.4 17.4 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20"/></svg>';
 /** Rotate: a clockwise arrow. */
 const IC_ROTATE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
 /** Panels and Toolsets go under the "Fix" button; keys and locked doors under "Keys". */

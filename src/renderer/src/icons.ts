@@ -38,7 +38,7 @@ export const DEFAULT_COLORS: Record<ColorKey, string> = {
   spawn: '#facc15',
   exfil: '#22c55e',
   bd: '#e11d48', // Black Division spawns (Terminal)
-  panel: '#67e8f9', // electrical panels / Toolsets (Terminal)
+  panel: '#fde047', // electrical panels / Toolsets (Terminal)
   mapKey: '#fbbf24', // key spawns and the doors they open (Terminal)
   player: '#ffffff',
   route: '#e2e8f0',

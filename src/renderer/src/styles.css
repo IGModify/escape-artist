@@ -529,12 +529,6 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
   background: #f8fafc; color: #0b0d10; font: 800 10px/16px 'Segoe UI', sans-serif; text-align: center;
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.75);
 }
-/* Electrical panels: a small solid pill with a bolt and the panel's number. */
-.poi-panel {
-  display: flex; align-items: center; gap: 1px; height: 18px; padding: 0 6px 0 3px; border-radius: 9px; white-space: nowrap;
-  background: var(--c); color: #0b0d10; font: 800 10px/18px 'Segoe UI', sans-serif;
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.8);
-}
 /* Locked doors: a small outlined padlock. */
 .poi-door {
   width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
