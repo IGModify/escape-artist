@@ -588,10 +588,7 @@ function FloorPicker(p: {
   const labels = shortLabels(p.floors);
   return (
     <div className="floors" role="toolbar" aria-label="Floors">
-      <div className="floors-now" title="Floor shown (PageUp / PageDown to change)">
-        {p.floor.name}
-      </div>
-      <div className="floors-stack">
+      <div className="floors-stack" title={`${p.floor.name} shown · PageUp / PageDown to change`}>
         {[...p.floors].reverse().map((f) => {
           const n = left.get(f.id) ?? 0;
           return (

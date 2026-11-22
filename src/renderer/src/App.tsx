@@ -313,17 +313,31 @@ export function App() {
           />
           <div className="map-hud">
             <RouteSummary route={route} spawn={spawn} objectives={required} pickingStart={pickingStart} routeStart={routeStart} floors={floors} compact={overlay} />
-            <div className="hud-buttons">
-              <button className={showSpawns ? 'on' : ''} onClick={() => setShowSpawns((v) => !v)} title="Show or hide spawn points for your side">
-                Spawns
-              </button>
-              <button className={showExtracts ? 'on' : ''} onClick={() => setShowExtracts((v) => !v)} title="Show or hide extracts (the one your route ends at stays visible)">
-                Extracts
-              </button>
-              <button className={pickingStart ? 'on' : ''} onClick={() => setPickingStart((v) => !v)} title="Click on the map to set where you are">
-                {pickingStart ? 'Click the map…' : 'Set start'}
-              </button>
-              {routeStart && <button onClick={() => void api.setPlayer(null)}>Clear</button>}
+            <div className="hud-buttons hud-group">
+              <button
+                className={`hud-ic${showSpawns ? ' on' : ''}`}
+                onClick={() => setShowSpawns((v) => !v)}
+                title="Spawns: show or hide spawn points for your side"
+                aria-label="Spawns"
+                dangerouslySetInnerHTML={{ __html: IC_SPAWNS }}
+              />
+              <button
+                className={`hud-ic${showExtracts ? ' on' : ''}`}
+                onClick={() => setShowExtracts((v) => !v)}
+                title="Extracts: show or hide extracts (the one your route ends at stays visible)"
+                aria-label="Extracts"
+                dangerouslySetInnerHTML={{ __html: IC_EXTRACTS }}
+              />
+              <button
+                className={`hud-ic${pickingStart ? ' on' : ''}`}
+                onClick={() => setPickingStart((v) => !v)}
+                title={pickingStart ? 'Click the map where you are' : 'Set start: click the map where you are'}
+                aria-label="Set start"
+                dangerouslySetInnerHTML={{ __html: IC_START }}
+              />
+              {routeStart && (
+                <button className="hud-ic" onClick={() => void api.setPlayer(null)} title="Clear your position" aria-label="Clear" dangerouslySetInnerHTML={{ __html: IC_CLEAR }} />
+              )}
             </div>
           </div>
           {svgError && <div className="map-msg">Map image failed to load: {svgError}</div>}
@@ -334,8 +348,21 @@ export function App() {
     </div>
   );
 
+  const questCount = new Set(objectives.map((o) => o.task.id)).size;
+  const tabsNav = (
+    <nav className="tabs">
+      {(overlay ? (['map', 'quests', 'loadout', 'story'] as Tab[]) : (['map', 'loadout', 'story'] as Tab[])).map((t) => (
+        <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
+          {t === 'map' && overlay ? 'Map' : t === 'map' || t === 'quests' ? 'Quests' : t === 'loadout' ? 'Bring' : 'Story'}
+          {(t === 'quests' || (t === 'map' && !overlay)) && questCount > 0 && <span className="tab-n">{questCount}</span>}
+          {t === 'loadout' && bring.length > 0 && <span className="tab-n">{bring.length}</span>}
+        </button>
+      ))}
+    </nav>
+  );
   const side = (
     <div className="side">
+      {!overlay && tabsNav}
       {tab === 'quests' || (!overlay && tab === 'map') ? (
         <QuestPanel
           objectives={objectives}
@@ -401,7 +428,7 @@ export function App() {
         <span className="pill mode" title="Quests shown are for this game mode (change in Settings)">
           {GAME_MODE_LABEL[main.gameMode.viewing]}
         </span>
-        {main.raid.inRaid && <span className="pill live">IN RAID</span>}
+        {main.raid.inRaid && <span className="pill live">In raid</span>}
         <span className="grow" data-tauri-drag-region={overlay ? true : undefined} />
         <button
           className={`no-drag icon gear${tab === 'settings' ? ' on' : ''}`}
@@ -460,14 +487,7 @@ export function App() {
       )}
       {!dataError && !data && <div className="banner">Loading quest data from tarkov.dev…</div>}
 
-      <nav className="tabs">
-        {(overlay ? (['map', 'quests', 'loadout', 'story'] as Tab[]) : (['map', 'loadout', 'story'] as Tab[])).map((t) => (
-          <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
-            {t === 'map' ? (overlay ? 'Map' : 'Quests') : t === 'quests' ? `Quests (${required.length})` : t === 'loadout' ? `Bring (${bring.length})` : 'Story'}
-          </button>
-        ))}
-        {tab === 'settings' && <span className="tab-settings">Settings</span>}
-      </nav>
+      {overlay && tabsNav}
 
       <main className="body">
         {overlay ? (tab === 'map' ? mapPanel : side) : (
@@ -513,14 +533,12 @@ function RouteSummary(p: {
   // Overlay: keep the map clear; an empty spacer keeps the buttons on the right.
   if (p.compact) return <div className="grow" />;
   return (
-    <div className="hud-text">
-      {p.spawn && p.spawn.distance < 60 && p.spawn.name && <div>Spawn: <b>{p.spawn.name}</b></div>}
-      <div>
-        {p.route.stops.length} stop{p.route.stops.length === 1 ? '' : 's'}
-        {p.route.end ? ' → extract' : ''} · ~{Math.round(p.route.distance)} m
-        {!p.route.exact && ' (approx.)'}
-      </div>
-      {seq.length > 1 && <div className="muted">Floors: {seq.map((f) => f.name).join(' → ')}</div>}
+    <div className="hud-text" title={seq.length > 1 ? `Floors: ${seq.map((f) => f.name).join(' → ')}` : undefined}>
+      {p.spawn && p.spawn.distance < 60 && p.spawn.name && <b>{p.spawn.name} · </b>}
+      {p.route.stops.length} stop{p.route.stops.length === 1 ? '' : 's'}
+      {p.route.end ? ' to extract' : ''} · ~{Math.round(p.route.distance).toLocaleString()} m
+      {!p.route.exact && ' (approx.)'}
+      {seq.length > 1 && <span className="muted"> · {seq.length} floors</span>}
     </div>
   );
 }
@@ -613,6 +631,9 @@ function QuestPanel(p: {
       <h3 className="quest-head">
         <span className="grow">
           {task.name} <KappaBadge task={task} /> <small>{task.trader.name}</small>
+        </span>
+        <span className="q-prog" title="Objectives ticked on this map">
+          {items.filter((o) => p.done.has(o.objective.id)).length}/{items.length}
         </span>
         <button
           className="icon hide-btn"
@@ -1190,3 +1211,10 @@ function withEarlierSteps(chapters: StoryChapter[], ids: string[]): string[] {
   }
   return [...out];
 }
+
+/** Map button icons (line icons, drawn in the button's text colour). */
+const IC_SPAWNS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/></svg>';
+const IC_EXTRACTS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h6v16h-6"/><path d="M10 16l4-4-4-4M4 12h10"/></svg>';
+const IC_START = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+const IC_CLEAR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
