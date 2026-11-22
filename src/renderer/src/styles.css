@@ -593,3 +593,5 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .mp-pop::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
 .bring-name + .bring-name { margin-top: 2px; }
 .bring-plus { margin-right: 5px; color: var(--accent); font-weight: 800; }
+/* Small quest-style marker (Terminal's electrical panels): less map covered. */
+.mk.mk-sm { width: 20px; height: 20px; border-width: 1.5px; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.5); }

@@ -57,8 +57,8 @@ function rotateSvg(outer: SVGSVGElement, content: Element, viewBox: string, turn
 }
 
 const poiSvg = (body: string) => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
-/** Electrical panel, drawn like a quest marker: a lightning bolt at quest-glyph size. */
-const PANEL_GLYPH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
+/** Electrical panel, drawn like a quest marker but smaller (there are ten): a lightning bolt. */
+const PANEL_GLYPH = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
 /** Black Division: a skull (not a crosshair, which reads as a kill-quest marker). Same as its toggle. */
 const BD_GLYPH = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1.4" fill="currentColor"/><circle cx="15" cy="12" r="1.4" fill="currentColor"/><path d="M8 20v2h8v-2"/><path d="M12.5 17l-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></svg>';
 /** Panel: lightning bolt; Toolset: wrench; key; locked door: padlock. */
@@ -311,8 +311,8 @@ export function MapView(props: MapViewProps) {
             ? `<div class="poi-door" style="--c:${color}">${POI_GLYPH.door}</div>`
             : poi.kind === 'button'
               ? `<div class="poi-button" style="--c:${color}">${POI_GLYPH.button}</div>`
-            : `<div class="mk" style="--c:${color}">${PANEL_GLYPH}</div>`;
-        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : poi.kind === 'button' ? [22, 22] : [26, 26];
+            : `<div class="mk mk-sm" style="--c:${color}">${PANEL_GLYPH}</div>`;
+        const size: [number, number] = poi.icon ? [28, 28] : poi.kind === 'door' ? [20, 20] : poi.kind === 'button' ? [22, 22] : [20, 20];
         const notes = [...new Set(here.map((x) => x.note))];
         const tip =
           `<b>${escapeHtml(poi.title)}${n > 1 ? ` · ${n} spots` : ''}</b>` +
