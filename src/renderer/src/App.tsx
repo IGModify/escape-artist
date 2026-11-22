@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import {
   activeTasks,
   bringList,
@@ -25,7 +25,7 @@ import { defaultFloor, floorOf, floorSequence, floorsFor, type Floor } from '@sh
 import { imagesForObjective, type GuideImage } from '@shared/questImages';
 import { solveRoute } from '@shared/route';
 import { activeSteps, chapterState, stepsUpTo, storyForMap, type ChapterState, type StoryChapter, type StoryStart } from '@shared/story';
-import type { ApiTask, TarkovData } from '@shared/tarkovTypes';
+import type { ApiMap, ApiTask, TarkovData } from '@shared/tarkovTypes';
 import { GAME_MODE_LABEL, type GameMode, type MainState, type Settings, type Vec3 } from '@shared/types';
 import { COLOR_GROUPS, colorsFrom, DEFAULT_COLORS, exfilGlyph, glyph, type ColorKey } from './icons';
 import { MapView } from './MapView';
@@ -529,20 +529,7 @@ export function App() {
         <span className="brand" title="Escape Artist" data-tauri-drag-region={overlay ? true : undefined}>
           {overlay ? 'EA' : 'Escape Artist'}
         </span>
-        <select className="no-drag" value={mapId ?? ''} onChange={(e) => setMapId(e.target.value || null)}>
-          <option value="">Choose map…</option>
-          {maps.map((m, i) => [
-            // Rarely played maps (Terminal) sit at the end, under a divider.
-            isRareMap(m) && !isRareMap(maps[i - 1] ?? m) ? (
-              <option key="rare" disabled>
-                ──────────
-              </option>
-            ) : null,
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>,
-          ])}
-        </select>
+        <MapPicker maps={maps} value={mapId} onChange={setMapId} />
         <span className="pill mode" title="Quests shown are for this game mode (change in Settings)">
           {GAME_MODE_LABEL[main.gameMode.viewing]}
         </span>
@@ -620,6 +607,89 @@ export function App() {
         <StatusLine main={main} activeCount={data ? active.length : null} hiddenCount={data ? active.length - tracked.length : 0} />
       </footer>
       {settings.clickThrough && overlay && <div className="ghost-hint">Click-through on · Ctrl+Alt+L to interact</div>}
+    </div>
+  );
+}
+
+/**
+ * Map picker: a rounded button and a popover list (a native <select> popup can't be styled).
+ * Checkmark on the current map; rarely played maps (Terminal) under a divider. Keyboard: arrows,
+ * Enter, Escape, and typing a letter jumps to the first map starting with it.
+ */
+function MapPicker(p: { maps: ApiMap[]; value: string | null; onChange: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(-1);
+  const root = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const current = p.maps.find((m) => m.id === p.value) ?? null;
+  const close = () => setOpen(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setHover(Math.max(0, p.maps.findIndex((m) => m.id === p.value)));
+    const away = (e: PointerEvent) => !root.current?.contains(e.target as Node) && close();
+    window.addEventListener('pointerdown', away);
+    return () => window.removeEventListener('pointerdown', away);
+  }, [open, p.maps, p.value]);
+  useEffect(() => {
+    if (open) list.current?.querySelector<HTMLElement>(`[data-i="${hover}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [open, hover]);
+
+  const pick = (i: number) => {
+    const m = p.maps[i];
+    if (m) p.onChange(m.id);
+    close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (!open) {
+      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {
+        setOpen(true);
+        e.preventDefault();
+      }
+      return;
+    }
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowDown') setHover((h) => Math.min(p.maps.length - 1, h + 1));
+    else if (e.key === 'ArrowUp') setHover((h) => Math.max(0, h - 1));
+    else if (e.key === 'Enter' || e.key === ' ') pick(hover);
+    else if (e.key.length === 1) {
+      const i = p.maps.findIndex((m) => m.name.toLowerCase().startsWith(e.key.toLowerCase()));
+      if (i >= 0) setHover(i);
+      return;
+    } else return;
+    e.preventDefault();
+  };
+
+  return (
+    <div className="mp no-drag" ref={root} onKeyDown={onKey}>
+      <button className={`mp-btn${open ? ' open' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}>
+        <span className="mp-name">{current?.name ?? 'Choose map'}</span>
+        <svg className="mp-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M7 9l5 5 5-5" />
+        </svg>
+      </button>
+      {open && (
+        <div className="mp-pop" role="listbox" ref={list}>
+          {p.maps.map((m, i) => (
+            <Fragment key={m.id}>
+              {isRareMap(m) && !isRareMap(p.maps[i - 1] ?? m) && <div className="mp-sep" role="separator" />}
+              <div
+                role="option"
+                aria-selected={m.id === p.value}
+                data-i={i}
+                className={`mp-opt${i === hover ? ' hover' : ''}${m.id === p.value ? ' sel' : ''}`}
+                onPointerEnter={() => setHover(i)}
+                onClick={() => pick(i)}
+              >
+                <svg className="mp-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+                {m.name}
+              </div>
+            </Fragment>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -825,18 +895,21 @@ function MapBring({ sections }: { sections: BringSection[] }) {
           <h4>{s.title}</h4>
           {s.intro && <p className="muted bring-intro">{s.intro}</p>}
           {s.rows.map((r, i) => (
-            <div key={i} className="bring">
-              <span className="bring-icons">
-                {r.items.map((it) => (
+            <div key={i} className="bring-card">
+              <span className={`bring-icons n${Math.min(r.items.length, 2)}`}>
+                {r.items.slice(0, 2).map((it) => (
                   <img key={it.name} src={it.icon} alt="" title={it.name} onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
                 ))}
               </span>
-              <div>
-                <div>
-                  {r.label && <b className="bring-label">{r.label}</b>}
-                  {r.items.map((it) => it.name).join(' + ')}
-                </div>
-                <div className="muted">{r.note}</div>
+              <div className="bring-body">
+                {r.label && <span className="bring-tag">{r.label}</span>}
+                {r.items.map((it, j) => (
+                  <div key={it.name} className="bring-name">
+                    {j > 0 && <span className="bring-plus">+</span>}
+                    {it.name}
+                  </div>
+                ))}
+                <div className="bring-note">{r.note}</div>
               </div>
             </div>
           ))}

@@ -537,8 +537,59 @@ select:focus, input:not([type]):focus, input[type='text']:focus { outline: none;
 .hud-view .hud-ic { display: inline-flex; align-items: center; gap: 3px; width: auto; padding: 0 6px; }
 .hud-deg { font: 700 10px/1 'Segoe UI', sans-serif; color: var(--muted); }
 /* Bring tab: a map's own must-brings (Terminal endings). Several icons for item pairs. */
-.bring-icons { display: flex; gap: 2px; flex: none; }
-.bring-intro { margin: 0 0 6px; font-size: 12px; }
-.bring-label { display: inline-block; min-width: 58px; margin-right: 6px; color: var(--accent); }
+.bring-intro { margin: -2px 0 8px; font-size: 12px; line-height: 1.45; }
+/* One card per item (or item pair): fixed icon column so every row's text lines up. */
+.bring-card {
+  display: grid; grid-template-columns: 58px 1fr; gap: 10px; align-items: start;
+  padding: 9px 10px; margin-bottom: 6px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
+}
+.bring-icons { position: relative; width: 58px; height: 46px; }
+.bring-icons img {
+  position: absolute; top: 0; width: 44px; height: 44px; padding: 3px; box-sizing: border-box; object-fit: contain;
+  background: #121417; border: 1px solid var(--line); border-radius: 8px;
+}
+.bring-icons.n1 img { left: 7px; }
+/* A pair (keycard + evidence) overlaps like a small stack. */
+.bring-icons.n2 img:first-child { left: 0; top: 0; z-index: 1; }
+.bring-icons.n2 img:last-child { left: 16px; top: 4px; opacity: 0.95; }
+.bring-body { min-width: 0; }
+.bring-tag {
+  display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.bring-name { font-size: 13px; font-weight: 600; line-height: 1.35; }
+.bring-note { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--muted); }
 /* Black Division: a quest-style marker with a skull, solid-tinted so it stands apart from quests. */
 .mk-bd { background: color-mix(in srgb, var(--c) 35%, #0c0e10); color: #fff; }
+/* Map picker (macOS-style pop-up button + menu). */
+.mp { position: relative; flex: 0 1 190px; min-width: 90px; }
+.mp-btn {
+  width: 100%; display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px 0 10px; border-radius: 7px;
+  background: var(--raised); border: 1px solid var(--line); color: var(--text); font: 500 12.5px/1 inherit; cursor: default;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.mp-btn:hover { background: var(--raised-hover); }
+.mp-btn.open, .mp-btn:focus-visible { border-color: var(--accent); outline: none; }
+.mp-name { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-chev { flex: none; color: var(--muted); transition: transform 0.15s ease; }
+.mp-btn.open .mp-chev { transform: rotate(180deg); }
+.mp-pop {
+  position: absolute; z-index: 2000; top: calc(100% + 5px); left: 0; min-width: 100%; width: max-content; max-width: 260px;
+  max-height: min(60vh, 420px); overflow-y: auto; padding: 5px; border-radius: 10px;
+  background: rgba(36, 40, 46, 0.98); border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35);
+  animation: mp-in 0.12s ease-out;
+}
+@keyframes mp-in { from { opacity: 0; transform: translateY(-3px) scale(0.98); } }
+.mp-opt {
+  display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 8px; border-radius: 6px;
+  font-size: 13px; color: var(--text); white-space: nowrap; cursor: default;
+}
+.mp-opt.hover { background: var(--accent); color: #14110a; }
+.mp-check { flex: none; visibility: hidden; }
+.mp-opt.sel .mp-check { visibility: visible; }
+.mp-sep { height: 1px; margin: 5px 8px; background: rgba(255, 255, 255, 0.09); }
+.mp-pop::-webkit-scrollbar { width: 8px; }
+.mp-pop::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+.bring-name + .bring-name { margin-top: 2px; }
+.bring-plus { margin-right: 5px; color: var(--accent); font-weight: 800; }
