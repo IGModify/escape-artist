@@ -265,6 +265,8 @@ export function MapView(props: MapViewProps) {
     const entries: Entry[] = [];
     for (const o of props.objectives) {
       const isDone = props.done.has(o.objective.id);
+      // Ticked objectives leave the map (they stay ticked in the quest list, where you can untick them).
+      if (isDone) continue;
       const item = objectiveItem(o.objective);
       for (const [li, loc] of o.locations.entries()) {
         const n = order.get(`${o.objective.id}@${loc.x},${loc.z}`) ?? null;
@@ -453,14 +455,23 @@ export function MapView(props: MapViewProps) {
         }
         const inside = flat(st);
         const allOff = inside.every((e) => e.off);
+        // A small fanned pile: up to 3 markers in their own colours (different types first), the
+        // most important in front, so a stack never hides what kinds of objectives are in it.
+        const kinds = [...new Set(inside.map((e) => e.o.kind))];
+        const pile = (kinds.length >= 3 ? kinds.slice(0, 3) : [...kinds, ...inside.map((e) => e.o.kind)].slice(0, Math.min(3, inside.length))).reverse();
         const html =
-          `<div class="mk mk-stack${inside.every((e) => e.isDone) ? ' mk-done' : ''}" style="--c:${c[top.o.kind]}">` +
-          glyph(top.o.kind, 14) +
+          `<div class="mk-pile">` +
+          pile
+            .slice(0, -1)
+            .map((k, i) => `<span class="mk mk-under" style="--c:${c[k]};--i:${pile.length - 1 - i}">${glyph(k, 12)}</span>`)
+            .join('') +
+          `<div class="mk mk-stack" style="--c:${c[pile[pile.length - 1]!]}">` +
+          glyph(pile[pile.length - 1]!, 14) +
           `<span class="mk-count">${inside.length}</span>` +
           (inside.some((e) => e.o.task.kappaRequired) ? '<span class="mk-k">K</span>' : '') +
           (allOff ? floorBadge(top.where!, floor!) : '') +
           itemBadges(top.item ? [top.item] : []) +
-          '</div>';
+          '</div></div>';
         const pts = L.latLngBounds(st.map((e) => toLatLng(e.loc)));
         const canZoom = m.getZoom() < m.getMaxZoom() && m.getBoundsZoom(pts.pad(0.5)) > m.getZoom();
         const marker = L.marker(toLatLng(top.loc), {
