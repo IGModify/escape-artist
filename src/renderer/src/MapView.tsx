@@ -199,23 +199,23 @@ export function MapView(props: MapViewProps) {
       const here = on(s.position);
       L.circleMarker(toLatLng(s.position), {
         radius: isMine ? 7 : 4,
-        weight: isMine || !here ? 2 : 1,
-        // On another floor: a hollow ring in the spawn color, still easy to see.
-        color: here ? (isMine ? '#ffffff' : '#000000') : c.spawn,
+        weight: isMine ? 2 : 1,
+        // On another floor: dimmed, like every other marker that isn't on the floor shown.
+        color: isMine ? '#ffffff' : '#000000',
         fillColor: c.spawn,
-        fillOpacity: here ? (isMine ? 1 : 0.8) : 0,
-        opacity: 1,
+        fillOpacity: here ? (isMine ? 1 : 0.8) : 0.22,
+        opacity: here ? 1 : 0.3,
         interactive: true,
       })
         .bindTooltip((isMine ? 'Your spawn' : s.name ? `Spawn: ${escapeHtml(s.name)}` : 'PMC spawn') + floorNote(s.position), { direction: 'top' })
         .addTo(group);
     }
 
-    // Extracts are always drawn at full strength; one on another floor gets a ▲/▼ badge.
+    // Extracts on another floor are dimmed and say which way to go (▲/▼).
     for (const e of props.extracts) {
       L.marker(toLatLng(e.position), {
         icon: L.divIcon({
-          className: 'mk-wrap',
+          className: `mk-wrap${on(e.position) ? '' : ' off-floor'}`,
           html: `<div class="exfil" style="--c:${c.exfil}">${exfilGlyph(13)}${on(e.position) ? '' : floorBadge(floorOf(e.position, floors)!, floor!)}</div>`,
           iconSize: [20, 20],
         }),
