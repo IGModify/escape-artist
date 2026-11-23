@@ -10,6 +10,7 @@ import { LogStream, type LogChunk } from '@shared/logStream';
 import { StorySource } from '@shared/storySource';
 import { QuestImageSource, type GuideImage } from '@shared/questImages';
 import { parseScreenshotName, reduceQuestLog } from '@shared/parsers';
+import { detectResets } from '@shared/resets';
 import type { TarkovData } from '@shared/tarkovTypes';
 import type { GameMode, MainState, QuestEvent, RaidEvent, Settings, Vec3 } from '@shared/types';
 
@@ -52,7 +53,10 @@ let lastLog: { all: Record<string, QuestEvent> | null; resetAt: string | undefin
 function derive() {
   const s = state.settings;
   const viewing: GameMode = s.gameMode === 'auto' ? (currentMode ?? 'regular') : s.gameMode;
-  const resetAt = s.questResetAt?.[viewing];
+  // The later of "Start fresh" and a reset found in the logs.
+  const manualReset = s.questResetAt?.[viewing];
+  const autoReset = state.autoResets[viewing];
+  const resetAt = manualReset && autoReset ? (Date.parse(manualReset) > Date.parse(autoReset) ? manualReset : autoReset) : (manualReset ?? autoReset);
   const all = logs[viewing];
   if (lastLog.all !== all || lastLog.resetAt !== resetAt) {
     const questLog = resetAt ? Object.fromEntries(Object.entries(all).filter(([, e]) => Date.parse(e.time) >= Date.parse(resetAt))) : all;
@@ -110,6 +114,7 @@ async function startWatchers() {
   const logsPath = s.logsPath ?? (await invoke<string | null>('find_logs_folder'));
   const shotsPath = s.screenshotsPath ?? (await invoke<string | null>('default_screenshots_folder'));
   logs = { regular: {}, season: {}, pve: {} }; // a different Logs folder means a different history
+  state.autoResets = {};
   currentMode = null;
   const [history, screenshotsFound] = await Promise.all([
     logsPath ? invoke<QuestHistory | null>('logs_watch', { path: logsPath }) : null,
@@ -121,6 +126,7 @@ async function startWatchers() {
     // Live events may already have arrived during the scan; keeping the newest per quest merges safely.
     for (const m of MODES) logs[m] = reduceQuestLog(logs[m], byMode[m]);
     currentMode ??= history.currentMode;
+    state.autoResets = detectResets(history.events);
   }
   state.status = { ...state.status, logsPath, screenshotsPath: shotsPath, logsFound: !!history, screenshotsFound };
   emit();
@@ -134,6 +140,7 @@ const ready = (async () => {
     questLog: {},
     manual: {},
     gameMode: { current: null, viewing: 'regular' },
+    autoResets: {},
     raid: { mapNameId: null, inRaid: false, startedAt: null },
     player: null,
   };

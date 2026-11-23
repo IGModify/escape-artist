@@ -87,6 +87,8 @@ export interface MainState {
   /** Manual overrides for the mode being shown. */
   manual: Record<string, boolean>;
   gameMode: { current: GameMode | null; viewing: GameMode };
+  /** Per mode: a profile reset (wipe/prestige) found in the logs; history before it is ignored. */
+  autoResets: Partial<Record<GameMode, string>>;
   raid: {
     mapNameId: string | null;
     inRaid: boolean;

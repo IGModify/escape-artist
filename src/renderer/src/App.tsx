@@ -1036,6 +1036,12 @@ function SettingsPanel(p: {
           </select>
         </label>
         <p className="muted">PvP, PvP Season and PvE each have their own quests. Showing {GAME_MODE_LABEL[p.main.gameMode.viewing]}.</p>
+        {p.main.autoResets[p.main.gameMode.viewing] && (
+          <p className="muted">
+            {GAME_MODE_LABEL[p.main.gameMode.viewing]} profile reset (wipe or prestige) found on{' '}
+            {new Date(p.main.autoResets[p.main.gameMode.viewing]!).toLocaleDateString()}: quest history before it is ignored.
+          </p>
+        )}
         <div className="row">
           {settings.questResetAt?.[p.main.gameMode.viewing] ? (
             <>
