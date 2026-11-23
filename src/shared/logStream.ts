@@ -1,10 +1,11 @@
-import { parseQuestEvents, parseRaidEvents } from './parsers';
+import { parsePrestiges, parseQuestEvents, parseRaidEvents } from './parsers';
 import type { QuestEvent, RaidEvent } from './types';
 
 /** A piece of a game log file, as streamed by the native side (src-tauri/src/logs.rs). */
 export interface LogChunk {
   file: string;
-  kind: 'application' | 'notifications';
+  /** backend: only prestige lines are sent (src-tauri filters them). */
+  kind: 'application' | 'notifications' | 'backend';
   text: string;
   /** True while replaying history at startup (not live game events). */
   replay: boolean;
@@ -37,6 +38,7 @@ export class LogStream {
     private readonly handlers: {
       quests: (events: QuestEvent[], replay: boolean) => void;
       raid: (event: RaidEvent, replay: boolean) => void;
+      prestige?: (event: { time: string; pve: boolean }, replay: boolean) => void;
     },
   ) {}
 
@@ -46,6 +48,10 @@ export class LogStream {
     const [complete, rest] = chunk.replay && chunk.kind === 'notifications' ? [before + chunk.text, ''] : splitComplete(before + chunk.text);
     this.pending.set(chunk.file, rest);
     if (!complete) return;
+    if (chunk.kind === 'backend') {
+      for (const ev of parsePrestiges(complete)) this.handlers.prestige?.(ev, chunk.replay);
+      return;
+    }
     if (chunk.kind === 'notifications') {
       const events = parseQuestEvents(complete);
       if (events.length) this.handlers.quests(events, chunk.replay);

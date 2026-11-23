@@ -40,6 +40,24 @@ export function detectResets(events: (QuestEvent & { mode: GameMode })[]): Parti
   return out;
 }
 
+/**
+ * Per mode, merges prestiges (exact times from the game) into detected resets: the latest one
+ * wins, except that a prestige shortly before a detected reset is that same reset, and its
+ * exact time is used.
+ */
+export function withPrestiges(
+  resets: Partial<Record<GameMode, string>>,
+  prestiges: { time: string; mode: GameMode }[],
+): Partial<Record<GameMode, string>> {
+  const out = { ...resets };
+  for (const p of prestiges) {
+    const cur = out[p.mode];
+    const sameReset = cur && ms(cur) >= ms(p.time) && ms(cur) - ms(p.time) <= BURST_MS;
+    if (!cur || sameReset || ms(p.time) > ms(cur)) out[p.mode] = p.time;
+  }
+  return out;
+}
+
 /** Index of the first restart of a burst (≥ MIN_RESTARTS within BURST_MS), counting from `from`. */
 function firstReset(ev: QuestEvent[], from: number): number | null {
   const finished = new Set<string>();

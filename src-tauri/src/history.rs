@@ -21,17 +21,28 @@ pub struct QuestEvent {
     pub mode: String,   // regular | season | pve
 }
 
+/// A prestige: the profile of `mode` starts over at `time`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Prestige {
+    pub time: String,
+    pub mode: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderScan {
     pub events: Vec<QuestEvent>,
     pub last_mode: Option<String>,
+    #[serde(default)]
+    pub prestiges: Vec<Prestige>,
 }
 
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct QuestHistory {
     pub events: Vec<QuestEvent>,
+    pub prestiges: Vec<Prestige>,
     /// Mode of the most recent session: what the player is on now.
     pub current_mode: Option<String>,
 }
@@ -41,7 +52,7 @@ struct Index {
     version: u32,
     folders: BTreeMap<String, FolderScan>,
 }
-const INDEX_VERSION: u32 = 1;
+const INDEX_VERSION: u32 = 2; // 2: prestiges
 
 pub fn normalize_mode(raw: &str) -> &'static str {
     match raw.trim().to_ascii_lowercase().as_str() {
@@ -74,6 +85,18 @@ fn mode_changes(app_log: &str) -> Vec<(String, &'static str)> {
             Some((sort_key.to_string(), normalize_mode(raw)))
         })
         .collect()
+}
+
+/// Which profile a prestige line is for: the PvE server says PvE; otherwise the PvP mode in effect.
+fn prestige_mode(line: &str, modes: &[(String, &'static str)], key: &str, carry: Option<&str>) -> &'static str {
+    if line.contains("://gw-pve.") {
+        return "pve";
+    }
+    let m = modes.iter().rev().find(|(t, _)| t.as_str() <= key).map(|(_, m)| *m).or_else(|| carry.map(normalize_mode));
+    match m {
+        Some("season") => "season",
+        _ => "regular",
+    }
 }
 
 /// Quest events (type 10/11/12 chat notifications) with their sortable time.
@@ -142,7 +165,14 @@ pub fn scan_folder(folder: &Path, carry_mode: Option<&str>) -> FolderScan {
         })
         .collect();
     let last_mode = modes.last().map(|(_, m)| m.to_string()).or(carry_mode.map(str::to_string));
-    FolderScan { events, last_mode }
+    let prestiges = crate::logs::prestige_lines(&read_all(folder, "backend"))
+        .lines()
+        .filter_map(|l| {
+            let (key, time) = line_time(l)?;
+            Some(Prestige { mode: prestige_mode(l, &modes, key, carry_mode).to_string(), time })
+        })
+        .collect();
+    FolderScan { events, last_mode, prestiges }
 }
 
 /// Scans every session, reusing `index_file` for sessions already read. The newest session
@@ -167,6 +197,7 @@ pub fn load(logs_root: &Path, index_file: &Path) -> QuestHistory {
     folders.sort();
 
     let mut events = Vec::new();
+    let mut prestiges = Vec::new();
     let mut carry: Option<String> = None;
     let mut changed = false;
     let last = folders.len().saturating_sub(1);
@@ -184,6 +215,7 @@ pub fn load(logs_root: &Path, index_file: &Path) -> QuestHistory {
         };
         carry = scan.last_mode.clone().or(carry);
         events.extend(scan.events);
+        prestiges.extend(scan.prestiges);
     }
     // Forget sessions EFT has deleted.
     let before = index.folders.len();
@@ -194,7 +226,7 @@ pub fn load(logs_root: &Path, index_file: &Path) -> QuestHistory {
             let _ = std::fs::write(index_file, text);
         }
     }
-    QuestHistory { events, current_mode: carry }
+    QuestHistory { events, prestiges, current_mode: carry }
 }
 
 #[cfg(test)]
@@ -231,6 +263,31 @@ mod tests {
             ]
         );
         assert_eq!(s.last_mode.as_deref(), Some("pve"));
+    }
+
+    #[test]
+    fn finds_prestiges_and_their_profile() {
+        let dir = tempfile::tempdir().unwrap();
+        let f = dir.path().join("log_2026.10.07_19-43-47_1.2");
+        fs::create_dir_all(&f).unwrap();
+        fs::write(f.join("a application_000.log"), mode("2026-10-07 19:44:00.000", "PvpSeason")).unwrap();
+        let line = |t: &str, host: &str, dir: &str| format!("{t}|1.2|Info|backend|{dir} HTTPS, id [96]: URL: https://{host}.escapefromtarkov.com/client/prestige/obtain, x\n");
+        fs::write(
+            f.join("a backend_000.log"),
+            line("2026-10-07 19:48:24.479", "gw-pve", "--->") // the request alone doesn't count
+                + &line("2026-10-07 19:48:25.021", "gw-pve", "<--- Response")
+                + &line("2026-10-07 20:10:00.000", "gw-pvp", "<--- Response")
+                + "2026-10-07 20:11:00.000|1.2|Info|backend|<--- Response HTTPS, id [97]: URL: https://gw-pvp.escapefromtarkov.com/client/prestige/list, x\n",
+        )
+        .unwrap();
+        let s = scan_folder(&f, None);
+        assert_eq!(
+            s.prestiges,
+            vec![
+                Prestige { time: "2026-10-07T19:48:25.021".into(), mode: "pve".into() },
+                Prestige { time: "2026-10-07T20:10:00.000".into(), mode: "season".into() },
+            ]
+        );
     }
 
     #[test]

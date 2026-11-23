@@ -55,6 +55,13 @@ export function normalizeMode(raw: string): GameMode {
   return 'regular';
 }
 
+/** Prestiges from backend.log (the server confirming one). `pve` when it was on the PvE server. */
+export function parsePrestiges(text: string): { time: string; pve: boolean }[] {
+  return splitLogEntries(text)
+    .filter((e) => e.message.includes('|backend|<--- Response') && e.message.includes('/client/prestige/obtain'))
+    .map((e) => ({ time: e.time, pve: e.message.includes('://gw-pve.') }));
+}
+
 /** Raid lifecycle (and session mode) from application.log. */
 export function parseRaidEvents(text: string): RaidEvent[] {
   const events: RaidEvent[] = [];

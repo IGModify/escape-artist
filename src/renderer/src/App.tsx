@@ -515,6 +515,25 @@ export function App() {
       className={`shell ${overlay ? 'overlay' : 'windowed'}${settings.clickThrough && overlay ? ' ghost' : ''}`}
       style={overlay ? { opacity: settings.opacity } : undefined}
     >
+      {main.prestige && (
+        <div className="prestige-wrap" role="dialog" aria-label="Prestige">
+          <div className="prestige">
+            <div className="prestige-badge" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 16.8 6.1 20l1.3-6.5L2.5 8.9l6.6-.8z" />
+              </svg>
+            </div>
+            <h3>Prestige reached</h3>
+            <p>
+              Congratulations! Your {GAME_MODE_LABEL[main.prestige.mode]} profile starts over, so its quests are reset here too: history,
+              manual changes and ticked objectives from before are cleared.
+            </p>
+            <button className="on" onClick={() => api.dismissPrestige()}>
+              Nice
+            </button>
+          </div>
+        </div>
+      )}
       <header className="bar" data-tauri-drag-region={overlay ? true : undefined}>
         <span className="brand" title="Escape Artist" data-tauri-drag-region={overlay ? true : undefined}>
           {overlay ? 'EA' : 'Escape Artist'}

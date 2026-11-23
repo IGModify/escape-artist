@@ -27,6 +27,8 @@ pub fn kind_of(name: &str) -> Option<&'static str> {
         Some("application")
     } else if n.ends_with("notifications.log") || n.ends_with("notifications_000.log") {
         Some("notifications")
+    } else if n.ends_with("backend.log") || n.ends_with("backend_000.log") {
+        Some("backend")
     } else {
         None
     }
@@ -74,6 +76,14 @@ fn read_from(path: &Path, offset: u64) -> std::io::Result<(String, u64)> {
     Ok((String::from_utf8_lossy(&buf).into_owned(), offset + end as u64))
 }
 
+/// Lines of a backend log that record a prestige (the server confirming it).
+pub fn prestige_lines(text: &str) -> String {
+    text.lines()
+        .filter(|l| l.contains("|backend|<--- Response") && l.contains("/client/prestige/obtain"))
+        .map(|l| format!("{l}\n"))
+        .collect()
+}
+
 /// The tailing state machine, separate from threads and Tauri so it can be tested.
 pub struct Tailer {
     root: PathBuf,
@@ -105,7 +115,8 @@ impl Tailer {
     }
 
     fn add(&mut self, path: PathBuf, kind: &'static str, initial: bool, emit: &mut impl FnMut(LogChunk)) {
-        if initial && kind == "notifications" {
+        // History covers what's already in these; only new lines matter.
+        if initial && (kind == "notifications" || kind == "backend") {
             let len = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
             // Remember the offset at the last complete line.
             let off = read_from(&path, 0).map(|(_, o)| o).unwrap_or(len);
@@ -125,6 +136,8 @@ impl Tailer {
         }
         if let Ok((text, next)) = read_from(path, offset) {
             self.offsets.insert(path.to_path_buf(), next);
+            // The backend log is large and chatty; the UI only needs prestige lines from it.
+            let text = if kind == "backend" { prestige_lines(&text) } else { text };
             if !text.is_empty() {
                 emit(LogChunk { file: path.to_string_lossy().into(), kind, text, replay, reset });
             }

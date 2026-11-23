@@ -89,6 +89,8 @@ export interface MainState {
   gameMode: { current: GameMode | null; viewing: GameMode };
   /** Per mode: a profile reset (wipe/prestige) found in the logs; history before it is ignored. */
   autoResets: Partial<Record<GameMode, string>>;
+  /** Set when a prestige happens while the app runs (shows the congratulations note). */
+  prestige: { mode: GameMode; time: string } | null;
   raid: {
     mapNameId: string | null;
     inRaid: boolean;

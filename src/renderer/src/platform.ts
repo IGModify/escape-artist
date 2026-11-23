@@ -10,7 +10,7 @@ import { LogStream, type LogChunk } from '@shared/logStream';
 import { StorySource } from '@shared/storySource';
 import { QuestImageSource, type GuideImage } from '@shared/questImages';
 import { parseScreenshotName, reduceQuestLog } from '@shared/parsers';
-import { detectResets } from '@shared/resets';
+import { detectResets, withPrestiges } from '@shared/resets';
 import type { TarkovData } from '@shared/tarkovTypes';
 import type { GameMode, MainState, QuestEvent, RaidEvent, Settings, Vec3 } from '@shared/types';
 
@@ -27,6 +27,7 @@ const questImages = new QuestImageSource(storage, (url, init) => httpFetch(url, 
 /** What src-tauri's history scan returns: every quest event, tagged with its game mode. */
 interface QuestHistory {
   events: (QuestEvent & { mode: GameMode })[];
+  prestiges: { time: string; mode: GameMode }[];
   currentMode: GameMode | null;
 }
 
@@ -106,7 +107,24 @@ function onRaid(ev: RaidEvent, replay: boolean) {
   emit();
 }
 
-const stream = new LogStream({ quests: onQuests, raid: onRaid });
+/**
+ * A prestige while playing: that profile starts over, so its quest history, manual quest
+ * changes and objective ticks are reset, and the screens show a congratulations note.
+ */
+function onPrestige(ev: { time: string; pve: boolean }, replay: boolean) {
+  if (replay) return;
+  const mode: GameMode = ev.pve ? 'pve' : currentMode === 'season' ? 'season' : 'regular';
+  state.autoResets = withPrestiges(state.autoResets, [{ time: ev.time, mode }]);
+  state.prestige = { mode, time: ev.time };
+  const s = state.settings;
+  void api.setSettings({
+    manualQuests: { ...s.manualQuests, [mode]: {} },
+    objectivesDone: { ...s.objectivesDone, [mode]: [] },
+  });
+  emit();
+}
+
+const stream = new LogStream({ quests: onQuests, raid: onRaid, prestige: onPrestige });
 const seenShots = new Set<string>();
 
 async function startWatchers() {
@@ -126,7 +144,7 @@ async function startWatchers() {
     // Live events may already have arrived during the scan; keeping the newest per quest merges safely.
     for (const m of MODES) logs[m] = reduceQuestLog(logs[m], byMode[m]);
     currentMode ??= history.currentMode;
-    state.autoResets = detectResets(history.events);
+    state.autoResets = withPrestiges(detectResets(history.events), history.prestiges ?? []);
   }
   state.status = { ...state.status, logsPath, screenshotsPath: shotsPath, logsFound: !!history, screenshotsFound };
   emit();
@@ -141,6 +159,7 @@ const ready = (async () => {
     manual: {},
     gameMode: { current: null, viewing: 'regular' },
     autoResets: {},
+    prestige: null,
     raid: { mapNameId: null, inRaid: false, startedAt: null },
     player: null,
   };
@@ -258,6 +277,11 @@ export const api = {
     const resets = { ...state.settings.questResetAt };
     delete resets[state.gameMode.viewing];
     await api.setSettings({ questResetAt: resets });
+  },
+  /** Close the prestige congratulations note. */
+  dismissPrestige: () => {
+    state.prestige = null;
+    emit();
   },
   setPlayer: async (position: Vec3 | null) => {
     await ready;
