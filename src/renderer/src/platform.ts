@@ -109,7 +109,7 @@ function onRaid(ev: RaidEvent, replay: boolean) {
 
 /**
  * A prestige while playing: that profile starts over, so its quest history, manual quest
- * changes and objective ticks are reset, and the screens show a congratulations note.
+ * changes, objective ticks and story progress are reset, and the screens show a congratulations note.
  */
 function onPrestige(ev: { time: string; pve: boolean }, replay: boolean) {
   if (replay) return;
@@ -120,6 +120,8 @@ function onPrestige(ev: { time: string; pve: boolean }, replay: boolean) {
   void api.setSettings({
     manualQuests: { ...s.manualQuests, [mode]: {} },
     objectivesDone: { ...s.objectivesDone, [mode]: [] },
+    storyDone: { ...s.storyDone, [mode]: [] },
+    storyStarted: { ...s.storyStarted, [mode]: [] },
   });
   emit();
 }

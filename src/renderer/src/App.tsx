@@ -525,8 +525,8 @@ export function App() {
             </div>
             <h3>Prestige reached</h3>
             <p>
-              Congratulations! Your {GAME_MODE_LABEL[main.prestige.mode]} profile starts over, so its quests are reset here too: history,
-              manual changes and ticked objectives from before are cleared.
+              Congratulations! Your {GAME_MODE_LABEL[main.prestige.mode]} profile starts over, so its quests and story chapters are reset
+              here too: history, manual changes, ticked objectives and story progress from before are cleared.
             </p>
             <button className="on" onClick={() => api.dismissPrestige()}>
               Nice
