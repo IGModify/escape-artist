@@ -542,7 +542,6 @@ export function App() {
         <span className="pill mode" title="Quests shown are for this game mode (change in Settings)">
           {GAME_MODE_LABEL[main.gameMode.viewing]}
         </span>
-        {main.raid.inRaid && <span className="pill live">In raid</span>}
         <span className="grow" data-tauri-drag-region={overlay ? true : undefined} />
         <button
           className={`no-drag icon gear${tab === 'settings' ? ' on' : ''}`}
