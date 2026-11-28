@@ -38,6 +38,26 @@ function crsFor(d: MapDisplay, turn = 0): L.CRS {
 }
 
 /**
+ * The downloaded map drawing, parsed in an inert document and stripped of anything that could
+ * run or load: scripts, embedded HTML/objects, on* handlers and javascript: or remote links.
+ * The CSP already blocks scripts; this is a second layer in case a download is ever tampered with.
+ */
+function safeSvg(text: string): Element | null {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const root = doc.documentElement;
+  if (root.nodeName !== 'svg' || doc.getElementsByTagName('parsererror').length) return null;
+  for (const el of Array.from(root.querySelectorAll('script, foreignObject, iframe, object, embed, use[href^="http"]'))) el.remove();
+  for (const el of [root, ...Array.from(root.querySelectorAll('*'))]) {
+    for (const a of Array.from(el.attributes)) {
+      const v = a.value.trim().toLowerCase();
+      const link = a.localName === 'href' && !v.startsWith('#');
+      if (a.name.toLowerCase().startsWith('on') || v.startsWith('javascript:') || link) el.removeAttribute(a.name);
+    }
+  }
+  return document.importNode(root, true);
+}
+
+/**
  * Turn the map drawing clockwise by `turn` inside its overlay. Leaflet places the overlay in the
  * (rotated) bounding box, so the content is rotated within a viewBox with width and height swapped
  * for quarter turns. Groups keep their ids, so floors still find them.
@@ -183,7 +203,8 @@ export function MapView(props: MapViewProps) {
     setSvgRoot(null);
     if (!m || !props.svgText || !d.svgPath) return;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.innerHTML = props.svgText;
+    const drawing = safeSvg(props.svgText);
+    if (drawing) svg.appendChild(drawing);
     const root = svg.children[0];
     const viewBox = root?.getAttribute('viewBox');
     if (viewBox && root && props.rotation) rotateSvg(svg, root, viewBox, props.rotation);
